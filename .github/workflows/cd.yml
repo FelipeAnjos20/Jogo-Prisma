@@ -1,0 +1,45 @@
+name: CD
+
+on:
+  push:
+    tags:
+      - "v*.*.*"
+
+env:
+  GODOT_VERSION: "4.3"
+
+jobs:
+  release:
+    name: Build e publicacao da release
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout do repositorio
+        uses: actions/checkout@v4
+
+      - name: Instalar Godot headless
+        uses: chickensoft-games/setup-godot@v2
+        with:
+          version: ${{ env.GODOT_VERSION }}
+          use-dotnet: false
+
+      - name: Importar recursos do projeto
+        run: godot --headless --editor --quit-after 60
+
+      - name: Exportar build Windows Desktop
+        run: |
+          mkdir -p build/windows
+          godot --headless --export-release "Windows Desktop" build/windows/Prisma.exe
+
+      - name: Compactar build
+        run: |
+          cd build/windows
+          zip -r "../../Prisma-windows-${{ github.ref_name }}.zip" .
+
+      - name: Publicar release no GitHub
+        uses: softprops/action-gh-release@v2
+        with:
+          name: "PRISMA ${{ github.ref_name }}"
+          body: "Build automatica gerada a partir da tag ${{ github.ref_name }}."
+          files: "Prisma-windows-${{ github.ref_name }}.zip"
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
