@@ -1,0 +1,308 @@
+[gd_scene load_steps=18 format=3 uid="uid://sjao84rit0xv"]
+
+[ext_resource type="Script" path="res://scripts/main.gd" id="1_main"]
+[ext_resource type="Script" path="res://scripts/light_beam.gd" id="2_light"]
+[ext_resource type="Script" path="res://scripts/mirror.gd" id="3_mirror"]
+[ext_resource type="Script" path="res://scripts/crystal.gd" id="4_crystal"]
+[ext_resource type="Script" path="res://scripts/obstacle.gd" id="5_obstacle"]
+[ext_resource type="Script" path="res://scripts/scene_background.gd" id="6_background"]
+[ext_resource type="AudioStream" path="res://assets/audio/gameplay_music.mp3" id="7_music"]
+[ext_resource type="Script" path="res://scripts/music_controller.gd" id="8_music_controller"]
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_mirror"]
+size = Vector2(120, 12)
+
+[sub_resource type="CircleShape2D" id="CircleShape2D_crystal"]
+radius = 32.0
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_obstacle_a"]
+size = Vector2(80, 180)
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_obstacle_b"]
+size = Vector2(80, 180)
+
+[sub_resource type="LabelSettings" id="LabelSettings_hud_title"]
+font_size = 20
+font_color = Color(1, 0.95, 0.72, 1)
+
+[sub_resource type="LabelSettings" id="LabelSettings_hud_text"]
+font_size = 16
+font_color = Color(0.88, 0.92, 1, 1)
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_hud_panel"]
+content_margin_left = 16.0
+content_margin_top = 12.0
+content_margin_right = 16.0
+content_margin_bottom = 12.0
+bg_color = Color(0.055, 0.075, 0.12, 0.88)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0.45, 0.68, 0.88, 0.45)
+corner_radius_top_left = 8
+corner_radius_top_right = 8
+corner_radius_bottom_right = 8
+corner_radius_bottom_left = 8
+
+[sub_resource type="LabelSettings" id="LabelSettings_victory_title"]
+font_size = 44
+font_color = Color(0.62, 1, 0.72, 1)
+outline_size = 8
+outline_color = Color(0.02, 0.08, 0.08, 0.9)
+
+[sub_resource type="LabelSettings" id="LabelSettings_victory_text"]
+font_size = 22
+font_color = Color(0.92, 1, 0.88, 1)
+outline_size = 5
+outline_color = Color(0.02, 0.08, 0.08, 0.85)
+
+[node name="main" type="Node2D" unique_id=1076640827]
+script = ExtResource("1_main")
+
+[node name="MusicPlayer" type="AudioStreamPlayer" parent="."]
+stream = ExtResource("7_music")
+volume_db = -18.0
+autoplay = true
+script = ExtResource("8_music_controller")
+
+[node name="Background" type="ColorRect" parent="."]
+z_index = -20
+offset_right = 1280.0
+offset_bottom = 720.0
+color = Color(0.035, 0.047, 0.075, 1)
+
+[node name="EnvironmentArt" type="Node2D" parent="."]
+z_index = -10
+script = ExtResource("6_background")
+
+[node name="RoomFrame" type="Node2D" parent="."]
+
+[node name="TopWall" type="ColorRect" parent="RoomFrame"]
+offset_left = 48.0
+offset_top = 86.0
+offset_right = 1232.0
+offset_bottom = 94.0
+color = Color(0.18, 0.23, 0.34, 1)
+
+[node name="BottomWall" type="ColorRect" parent="RoomFrame"]
+offset_left = 48.0
+offset_top = 650.0
+offset_right = 1232.0
+offset_bottom = 658.0
+color = Color(0.18, 0.23, 0.34, 1)
+
+[node name="LeftWall" type="ColorRect" parent="RoomFrame"]
+offset_left = 48.0
+offset_top = 86.0
+offset_right = 56.0
+offset_bottom = 658.0
+color = Color(0.18, 0.23, 0.34, 1)
+
+[node name="RightWall" type="ColorRect" parent="RoomFrame"]
+offset_left = 1224.0
+offset_top = 86.0
+offset_right = 1232.0
+offset_bottom = 658.0
+color = Color(0.18, 0.23, 0.34, 1)
+
+[node name="Puzzle" type="Node2D" parent="."]
+
+[node name="Emitter" type="Node2D" parent="Puzzle"]
+position = Vector2(120, 360)
+
+[node name="EmitterBody" type="Polygon2D" parent="Puzzle/Emitter"]
+color = Color(1, 0.65, 0.16, 1)
+polygon = PackedVector2Array(-26, -20, -26, 20, 26, 0)
+
+[node name="EmitterLabel" type="Label" parent="Puzzle/Emitter"]
+offset_left = -36.0
+offset_top = 28.0
+offset_right = 58.0
+offset_bottom = 51.0
+text = "Emissor"
+
+[node name="Mirrors" type="Node2D" parent="Puzzle"]
+
+[node name="MirrorA" type="StaticBody2D" parent="Puzzle/Mirrors" groups=["mirrors"]]
+position = Vector2(420, 360)
+rotation = 0.785398
+script = ExtResource("3_mirror")
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Puzzle/Mirrors/MirrorA"]
+shape = SubResource("RectangleShape2D_mirror")
+
+[node name="MirrorB" type="StaticBody2D" parent="Puzzle/Mirrors" groups=["mirrors"]]
+position = Vector2(420, 560)
+rotation = -0.785398
+script = ExtResource("3_mirror")
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Puzzle/Mirrors/MirrorB"]
+shape = SubResource("RectangleShape2D_mirror")
+
+[node name="MirrorC" type="StaticBody2D" parent="Puzzle/Mirrors" groups=["mirrors"]]
+position = Vector2(640, 360)
+rotation = 0.785398
+script = ExtResource("3_mirror")
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Puzzle/Mirrors/MirrorC"]
+shape = SubResource("RectangleShape2D_mirror")
+
+[node name="MirrorD" type="StaticBody2D" parent="Puzzle/Mirrors" groups=["mirrors"]]
+position = Vector2(860, 360)
+rotation = -0.785398
+script = ExtResource("3_mirror")
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Puzzle/Mirrors/MirrorD"]
+shape = SubResource("RectangleShape2D_mirror")
+
+[node name="Obstacles" type="Node2D" parent="Puzzle"]
+
+[node name="ObstacleA" type="StaticBody2D" parent="Puzzle/Obstacles"]
+position = Vector2(600, 360)
+script = ExtResource("5_obstacle")
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Puzzle/Obstacles/ObstacleA"]
+shape = SubResource("RectangleShape2D_obstacle_a")
+
+[node name="ObstacleB" type="StaticBody2D" parent="Puzzle/Obstacles"]
+position = Vector2(920, 360)
+script = ExtResource("5_obstacle")
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Puzzle/Obstacles/ObstacleB"]
+shape = SubResource("RectangleShape2D_obstacle_b")
+
+[node name="Crystal" type="Area2D" parent="Puzzle"]
+position = Vector2(780, 560)
+script = ExtResource("4_crystal")
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Puzzle/Crystal"]
+shape = SubResource("CircleShape2D_crystal")
+
+[node name="CrystalLabel" type="Label" parent="Puzzle/Crystal"]
+offset_left = -36.0
+offset_top = 42.0
+offset_right = 50.0
+offset_bottom = 65.0
+text = "Cristal"
+
+[node name="LightBeam" type="Node2D" parent="Puzzle" node_paths=PackedStringArray("emitter_path")]
+z_index = 100
+script = ExtResource("2_light")
+emitter_path = NodePath("../Emitter")
+max_distance = 1800.0
+max_reflections = 5
+
+[node name="BeamLine" type="Line2D" parent="Puzzle/LightBeam"]
+z_index = 100
+width = 10.0
+default_color = Color(1, 1, 0, 1)
+
+[node name="HUD" type="CanvasLayer" parent="."]
+
+[node name="Panel" type="PanelContainer" parent="HUD"]
+offset_left = 24.0
+offset_top = 20.0
+offset_right = 508.0
+offset_bottom = 190.0
+theme_override_styles/panel = SubResource("StyleBoxFlat_hud_panel")
+
+[node name="VBox" type="VBoxContainer" parent="HUD/Panel"]
+layout_mode = 2
+theme_override_constants/separation = 6
+
+[node name="TitleLabel" type="Label" parent="HUD/Panel/VBox"]
+layout_mode = 2
+text = "PRISMA - prototipo"
+label_settings = SubResource("LabelSettings_hud_title")
+
+[node name="LevelLabel" type="Label" parent="HUD/Panel/VBox"]
+layout_mode = 2
+text = "Fase 1"
+label_settings = SubResource("LabelSettings_hud_text")
+
+[node name="ObjectiveLabel" type="Label" parent="HUD/Panel/VBox"]
+layout_mode = 2
+text = "Objetivo:"
+label_settings = SubResource("LabelSettings_hud_text")
+
+[node name="MovementLabel" type="Label" parent="HUD/Panel/VBox"]
+layout_mode = 2
+text = "Rotacoes: 0"
+label_settings = SubResource("LabelSettings_hud_text")
+
+[node name="StateLabel" type="Label" parent="HUD/Panel/VBox"]
+layout_mode = 2
+text = "Estado: jogando"
+label_settings = SubResource("LabelSettings_hud_text")
+
+[node name="FeedbackLabel" type="Label" parent="HUD/Panel/VBox"]
+layout_mode = 2
+text = "Clique em um espelho. Use Q/E para girar."
+label_settings = SubResource("LabelSettings_hud_text")
+
+[node name="SidePanel" type="PanelContainer" parent="HUD"]
+offset_left = 1010.0
+offset_top = 20.0
+offset_right = 1256.0
+offset_bottom = 222.0
+theme_override_styles/panel = SubResource("StyleBoxFlat_hud_panel")
+
+[node name="VBox" type="VBoxContainer" parent="HUD/SidePanel"]
+layout_mode = 2
+theme_override_constants/separation = 7
+
+[node name="PanelTitleLabel" type="Label" parent="HUD/SidePanel/VBox"]
+layout_mode = 2
+text = "PAINEL"
+label_settings = SubResource("LabelSettings_hud_title")
+
+[node name="ProgressLabel" type="Label" parent="HUD/SidePanel/VBox"]
+layout_mode = 2
+text = "Fragmentos: 0 / 3"
+label_settings = SubResource("LabelSettings_hud_text")
+
+[node name="MusicStatusLabel" type="Label" parent="HUD/SidePanel/VBox"]
+layout_mode = 2
+text = "Musica: ligada (M)"
+label_settings = SubResource("LabelSettings_hud_text")
+
+[node name="ControlsLabel" type="Label" parent="HUD/SidePanel/VBox"]
+layout_mode = 2
+text = "1-4 seleciona\nQ/E gira\nTab alterna\nR reinicia\nN avanca\nEsc menu"
+label_settings = SubResource("LabelSettings_hud_text")
+
+[node name="LegendLabel" type="Label" parent="HUD/SidePanel/VBox"]
+layout_mode = 2
+text = "Azul: fixo\nVermelho: bloqueio\nVerde: cristal"
+label_settings = SubResource("LabelSettings_hud_text")
+
+[node name="CompletionShade" type="ColorRect" parent="HUD"]
+visible = false
+offset_right = 1280.0
+offset_bottom = 720.0
+mouse_filter = 2
+color = Color(0.02, 0.05, 0.08, 0)
+
+[node name="VictoryLabel" type="Label" parent="HUD"]
+visible = false
+offset_left = 220.0
+offset_top = 250.0
+offset_right = 1060.0
+offset_bottom = 314.0
+pivot_offset = Vector2(420, 32)
+text = "CRISTAL ATIVADO"
+label_settings = SubResource("LabelSettings_victory_title")
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="VictoryHintLabel" type="Label" parent="HUD"]
+visible = false
+offset_left = 300.0
+offset_top = 330.0
+offset_right = 980.0
+offset_bottom = 386.0
+text = "Fragmento recuperado. Pressione N para avancar ou R para reiniciar."
+label_settings = SubResource("LabelSettings_victory_text")
+horizontal_alignment = 1
+vertical_alignment = 1
