@@ -1,5 +1,7 @@
 extends StaticBody2D
 
+const Geometria = preload("res://scripts/geometria.gd")
+
 signal selected(mirror: Node)
 signal rotated(mirror: Node)
 
@@ -36,7 +38,7 @@ func rotate_by_step(direction: int) -> void:
 	if not is_active or not can_rotate:
 		return
 
-	rotation_degrees += rotate_step_degrees * float(direction)
+	rotation_degrees = Geometria.proximo_angulo(rotation_degrees, direction, rotate_step_degrees)
 	rotated.emit(self)
 	queue_redraw()
 
