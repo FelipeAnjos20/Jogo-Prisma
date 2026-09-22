@@ -6,7 +6,7 @@ on:
       - "v*.*.*"
 
 env:
-  GODOT_VERSION: "4.3"
+  GODOT_VERSION: "4.6.3"
 
 jobs:
   release:
