@@ -21,6 +21,7 @@ jobs:
         with:
           version: ${{ env.GODOT_VERSION }}
           use-dotnet: false
+          include-templates: true
 
       - name: Importar recursos do projeto
         run: godot --headless --editor --quit-after 60
