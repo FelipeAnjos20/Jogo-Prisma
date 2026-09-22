@@ -5,7 +5,7 @@ Todas as mudancas notaveis deste projeto serao documentadas neste arquivo.
 O formato e baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/),
 e este projeto segue o [Versionamento Semantico](https://semver.org/lang/pt-BR/).
 
-## [Nao lancado]
+## [1.1.0] - 2026-09-22
 
 ### Adicionado
 
@@ -24,6 +24,11 @@ e este projeto segue o [Versionamento Semantico](https://semver.org/lang/pt-BR/)
 
 - `scripts/mirror.gd` passa a delegar o calculo do proximo angulo de rotacao
   para `Geometria.proximo_angulo()`, mantendo o mesmo comportamento.
+
+### Corrigido
+
+- `GODOT_VERSION` nos workflows de CI/CD, que exigia o formato completo
+  `major.minor.patch` (`4.6.3`) para a action `setup-godot@v2`.
 
 ## [1.0.0] - 2026-09-21
 
