@@ -5,6 +5,14 @@ Todas as mudancas notaveis deste projeto serao documentadas neste arquivo.
 O formato e baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/),
 e este projeto segue o [Versionamento Semantico](https://semver.org/lang/pt-BR/).
 
+## [1.1.1] - 2026-09-22
+
+### Corrigido
+
+- Pipeline de release (`.github/workflows/cd.yml`) nao baixava os export
+  templates do Godot, fazendo a exportacao da build Windows Desktop falhar;
+  adicionado `include-templates: true` na instalacao do Godot.
+
 ## [1.1.0] - 2026-09-22
 
 ### Adicionado
