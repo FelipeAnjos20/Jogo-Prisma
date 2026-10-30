@@ -22,6 +22,7 @@ var _options_panel: Control
 var _howto_panel: Control
 var _credits_panel: Control
 var _name_panel: Control
+var _ready_panel: Control
 var _memories_panel: Control
 var _memories_list: VBoxContainer
 var _achievements_panel: Control
@@ -49,6 +50,7 @@ func _ready() -> void:
 	_build_howto_panel()
 	_build_credits_panel()
 	_build_name_panel()
+	_build_ready_panel()
 	_build_memories_panel()
 	_build_achievements_panel()
 	_build_footer()
@@ -586,7 +588,7 @@ func _build_footer() -> void:
 	_progress_label.position = Vector2(88, 672)
 	hud.add_child(_progress_label)
 
-	var version := UI.make_label("F11: tela cheia   ·   v3.3", 13, UI.TEXT_DIM, 500)
+	var version := UI.make_label("F11: tela cheia   ·   v3.5", 13, UI.TEXT_DIM, 500)
 	version.position = Vector2(1060, 690)
 	hud.add_child(version)
 
@@ -623,9 +625,106 @@ func _on_play() -> void:
 	_start_game()
 
 
+# Antes da fase, a tela "Antes de comecar" mostra os controles (ate o jogador pedir para nao mostrar).
 func _start_game() -> void:
+	if GameState.show_controls_before_play and not _ready_panel.visible:
+		_show_panel(_ready_panel)
+		return
 	GameState.current_level = _next_level()
 	Transition.go_to("res://scenes/main.tscn")
+
+
+# Tela rapida de como jogar: objetivo e os controles desenhados como teclas.
+func _build_ready_panel() -> void:
+	var column := _new_column(860)
+	_ready_panel = column
+
+	var card := UI.make_panel(UI.PANEL_BG, Color(1.0, 0.86, 0.36, 0.6))
+	column.add_child(card)
+	var inner := VBoxContainer.new()
+	inner.add_theme_constant_override("separation", 10)
+	card.add_child(inner)
+
+	var header := HBoxContainer.new()
+	header.add_theme_constant_override("separation", 12)
+	inner.add_child(header)
+	var face := EchoFace.new(16.0)
+	face.mood = "happy"
+	header.add_child(face)
+	var titles := VBoxContainer.new()
+	titles.add_theme_constant_override("separation", 0)
+	header.add_child(titles)
+	titles.add_child(UI.make_label("Antes de começar", 26, Color(1.0, 0.96, 0.84), 800))
+	titles.add_child(UI.make_label("Objetivo: leve a luz do emissor até todos os cristais ao mesmo tempo.", 16, UI.TEXT, 600))
+
+	var grid := GridContainer.new()
+	grid.columns = 2
+	grid.add_theme_constant_override("h_separation", 36)
+	grid.add_theme_constant_override("v_separation", 8)
+	inner.add_child(grid)
+	var controls := [
+		[["Clique"], "Selecionar um espelho"],
+		[["Arrastar", "Q", "E", "Roda"], "Girar o espelho 15°"],
+		[["1-9", "Tab"], "Trocar de espelho"],
+		[["Z"], "Desfazer o último giro"],
+		[["H"], "Dica (2x mostra o ângulo)"],
+		[["R"], "Reiniciar a fase"],
+		[["T"], "Conversar com o Echo"],
+		[["Esc"], "Pausar"],
+	]
+	for entry in controls:
+		grid.add_child(_control_row(entry[0], entry[1]))
+
+	var tip := UI.make_label("Passe o mouse sobre qualquer peça para saber o que ela faz. Menos giros = mais estrelas.", 14, UI.TEXT_DIM, 500)
+	inner.add_child(tip)
+
+	var buttons := HBoxContainer.new()
+	buttons.add_theme_constant_override("separation", 12)
+	column.add_child(buttons)
+	var start := UI.make_button("Começar  ›", 22, 220)
+	start.custom_minimum_size.y = 52
+	start.add_to_group("default_focus")
+	start.pressed.connect(_start_game)
+	buttons.add_child(start)
+	var back := UI.make_button("Voltar", 20, 160)
+	back.pressed.connect(func() -> void: _show_panel(_main_panel))
+	buttons.add_child(back)
+	var skip := CheckButton.new()
+	skip.text = "Não mostrar de novo"
+	skip.focus_mode = Control.FOCUS_ALL
+	skip.button_pressed = not GameState.show_controls_before_play
+	skip.toggled.connect(func(on: bool) -> void:
+		GameState.set_show_controls_before_play(not on)
+		Sfx.play("click")
+	)
+	buttons.add_child(skip)
+
+
+# Uma linha da tela de controles: teclas desenhadas e o que elas fazem.
+func _control_row(keys: Array, text: String) -> HBoxContainer:
+	var row := HBoxContainer.new()
+	row.add_theme_constant_override("separation", 6)
+	var keys_box := HBoxContainer.new()
+	keys_box.add_theme_constant_override("separation", 4)
+	keys_box.custom_minimum_size.x = 190
+	keys_box.alignment = BoxContainer.ALIGNMENT_END
+	row.add_child(keys_box)
+	for key in keys:
+		var cap := PanelContainer.new()
+		var style := UI.panel_style(Color(0.1, 0.15, 0.26), Color(1.0, 0.86, 0.36, 0.7), 6, 1, 0)
+		style.content_margin_left = 8
+		style.content_margin_right = 8
+		style.content_margin_top = 2
+		style.content_margin_bottom = 4
+		style.shadow_size = 0
+		style.border_width_bottom = 3
+		cap.add_theme_stylebox_override("panel", style)
+		cap.add_child(UI.make_label(key, 14, UI.ACCENT, 800))
+		keys_box.add_child(cap)
+	var label := UI.make_label(text, 15, UI.TEXT, 500)
+	label.custom_minimum_size.x = 200
+	row.add_child(label)
+	return row
 
 
 func _on_reset_pressed() -> void:

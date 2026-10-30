@@ -245,6 +245,7 @@ comentários para não poluir a tela.
 | Menu principal | Jogar/Continuar, Seleção de fases, Memórias do Prisma, Conquistas e Echo, Como jogar, Opções, Créditos e Sair; prisma animado com os fragmentos recuperados; total de estrelas |
 | Conquistas e Echo | Lista das 10 conquistas (ganhas e bloqueadas) e o visual do Echo: cores e acessórios liberados por estrelas |
 | Nome do jogador | Na primeira partida: Echo se apresenta e pergunta o nome (Começar / Prefiro não dizer) |
+| Antes de começar | Ao clicar em Jogar: objetivo e os controles desenhados como teclas; Começar / Voltar e a opção "Não mostrar de novo" |
 | Memórias do Prisma | As 10 memórias da história; as bloqueadas mostram qual fase concluir |
 | Seleção de fases | O Farol de Aurora: 10 andares (de baixo para cima) com janela acesa, estrelas ou cadeado; lanterna que brilha com os fragmentos; cartão com miniatura grande, objetivo, meta, recorde e botão Jogar |
 | HUD da fase | Echo clicável (onde ele também fala), nome e objetivo, rotações com barrinha colorida em relação à meta, cristais como gemas que acendem, botões com ícone (lâmpada H, reiniciar R, pausa Esc); linha de atalhos que cresce conforme a fase e muda quando o controle é usado |

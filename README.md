@@ -126,11 +126,15 @@ O manual completo, com checklist de conferência e solução de problemas, está
 1. No menu principal, clique em **Jogar** (ou **Continuar**, se já houver progresso). Na primeira vez,
    o Echo se apresenta e pergunta **como você quer ser chamado** (dá para pular). Você também pode
    escolher qualquer fase liberada em **Seleção de fases**.
+   Antes da fase começar, a tela **Antes de começar** mostra o objetivo e os controles desenhados como
+   teclas (Clique, Q/E, Z, H, R, T, Esc). Dá para marcar **Não mostrar de novo**.
 2. A **fase 1 tem um tutorial**: uma seta animada mostra qual espelho girar, e o assistente Echo
    explica a mecânica. Em cada fase nova, Echo apresenta o elemento novo.
 3. Em **Como jogar**, no menu, há um resumo dos controles e dos elementos. Em **Opções** ficam o
    volume da música e dos efeitos, a tela cheia e o guia de ângulos.
 4. **Parou o mouse sobre uma peça?** Aparece uma caixa explicando o que ela é e o que faz.
+
+![Antes de começar: objetivo e controles](docs/img/antes_de_comecar.png)
 
 ![Fase 1 com tutorial](docs/img/fase1_tutorial.png)
 

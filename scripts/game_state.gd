@@ -24,6 +24,8 @@ var show_angles := true
 var fullscreen := false
 # Acessibilidade: sem tremor de camera, flash branco, camera lenta e zoom.
 var reduce_effects := false
+# Tela "Antes de comecar" com os controles ao clicar em Jogar (o jogador pode desligar).
+var show_controls_before_play := true
 
 # O Echo pergunta o nome na primeira partida e como o jogador prefere ser ajudado.
 var player_name := ""
@@ -235,6 +237,11 @@ func set_show_angles(value: bool) -> void:
 	save_data()
 
 
+func set_show_controls_before_play(value: bool) -> void:
+	show_controls_before_play = value
+	save_data()
+
+
 func set_reduce_effects(value: bool) -> void:
 	reduce_effects = value
 	save_data()
@@ -305,6 +312,7 @@ func save_data() -> void:
 	config.set_value("settings", "fullscreen", fullscreen)
 	config.set_value("settings", "show_angles", show_angles)
 	config.set_value("settings", "reduce_effects", reduce_effects)
+	config.set_value("settings", "show_controls_before_play", show_controls_before_play)
 	config.set_value("player", "name", player_name)
 	config.set_value("player", "name_asked", name_asked)
 	config.set_value("player", "echo_help", echo_help)
@@ -329,6 +337,7 @@ func load_data() -> void:
 	fullscreen = bool(config.get_value("settings", "fullscreen", fullscreen))
 	show_angles = bool(config.get_value("settings", "show_angles", show_angles))
 	reduce_effects = bool(config.get_value("settings", "reduce_effects", reduce_effects))
+	show_controls_before_play = bool(config.get_value("settings", "show_controls_before_play", show_controls_before_play))
 	player_name = EchoBrain.limpar_nome(str(config.get_value("player", "name", player_name)))
 	name_asked = bool(config.get_value("player", "name_asked", name_asked))
 	echo_help = str(config.get_value("player", "echo_help", echo_help))

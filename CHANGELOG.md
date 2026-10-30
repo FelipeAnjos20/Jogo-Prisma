@@ -5,6 +5,18 @@ Todas as mudancas notaveis deste projeto serao documentadas neste arquivo.
 O formato e baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/),
 e este projeto segue o [Versionamento Semantico](https://semver.org/lang/pt-BR/).
 
+## [3.5.0] - 2026-10-30
+
+### Adicionado
+
+- Tela "Antes de comecar" ao clicar em Jogar: objetivo e controles desenhados como teclas
+  (Clique, Arrastar, Q/E, Roda, 1-9/Tab, Z, H, R, T, Esc), com Comecar / Voltar e a opcao
+  "Nao mostrar de novo" (salva no save).
+
+### Corrigido
+
+- Rodape do menu mostrava v3.3 na versao 3.4.
+
 ## [3.4.0] - 2026-10-30
 
 ### Adicionado
