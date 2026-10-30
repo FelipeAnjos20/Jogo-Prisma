@@ -10,6 +10,9 @@ efeito imediato e visível no caminho do feixe.
 A cada sala concluída o jogador recupera um dos **10 fragmentos do Prisma de Luz**, guiado pelo
 assistente **Echo**.
 
+> ## ▶ Primeira vez? Comece por aqui: **[Como abrir o PRISMA no seu computador](COMO_ABRIR.md)**
+> Tutorial passo a passo (5 minutos) para baixar, abrir e jogar, sem precisar de conhecimento técnico.
+
 ![Menu principal](docs/img/menu.png)
 
 > **Projeto acadêmico** — PAC Extensionista III, Engenharia de Software, Católica de Santa Catarina.
@@ -239,6 +242,7 @@ desfazer (`Z`) e reiniciar (`R`). O desafio está em resolver com **poucas rota�
 
 | Documento | Onde consultar |
 | --- | --- |
+| **Tutorial: como abrir o jogo no seu computador** | **[COMO_ABRIR.md](COMO_ABRIR.md)** |
 | **GDD (Game Design Document) atualizado** | **[docs/GDD.md](docs/GDD.md)** (lê direto no GitHub) e [docs/GDD_PRISMA.pdf](docs/GDD_PRISMA.pdf) |
 | Manual de reconstrução do ambiente (escrito para o pacote da entrega N1; neste repositório o projeto Godot fica na raiz) | [docs/Manual_de_Reconstrucao.pdf](docs/Manual_de_Reconstrucao.pdf) |
 | Vídeo de gameplay (2min41s) | [docs/video/PRISMA_Gameplay_N1.mp4](docs/video/PRISMA_Gameplay_N1.mp4) |
@@ -268,6 +272,7 @@ Jogo-Prisma/
 ├── tools/level_simulator/     # simulador de fases em Node.js (ignorado pelo Godot)
 ├── docs/                      # GDD, manual, vídeo, contexto, ADRs, créditos, imagens
 ├── .github/workflows/         # CI (testes) e CD (build + release por tag)
+├── COMO_ABRIR.md              # tutorial passo a passo para abrir e jogar
 └── CHANGELOG.md
 ```
 
