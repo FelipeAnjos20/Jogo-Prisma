@@ -15,6 +15,10 @@ config/description="PRISMA - O lugar onde a luz quebrou. Puzzle de luz, espelhos
 run/main_scene="res://scenes/menu.tscn"
 config/features=PackedStringArray("4.6", "GL Compatibility")
 config/icon="res://icon.svg"
+boot_splash/bg_color=Color(0.0117647, 0.0196078, 0.0392157, 1)
+boot_splash/image="res://icon.png"
+boot_splash/fullsize=false
+boot_splash/use_filter=true
 
 [autoload]
 
