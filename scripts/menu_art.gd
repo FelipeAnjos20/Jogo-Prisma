@@ -17,6 +17,7 @@ const SPECTRUM := [
 ]
 
 var time := 0.0
+var _pointer_offset := Vector2.ZERO
 
 # Fragmentos do prisma: um por fase. Os ja recuperados brilham em cores do espectro.
 @export var shard_count := 10
@@ -30,8 +31,21 @@ func _ready() -> void:
 
 
 func _process(delta: float) -> void:
-	time += delta
+	if _reduced_effects():
+		_pointer_offset = Vector2.ZERO
+	else:
+		time += delta
+		_pointer_offset = _pointer_offset.lerp(mouse_offset(get_local_mouse_position()), 1.0 - exp(-delta * 4.0))
 	queue_redraw()
+
+
+static func mouse_offset(local_mouse: Vector2) -> Vector2:
+	return Vector2(clampf(local_mouse.x / 640.0, -1.0, 1.0) * 18.0, clampf(local_mouse.y / 360.0, -1.0, 1.0) * 28.0)
+
+
+func _reduced_effects() -> bool:
+	var state := get_tree().root.get_node_or_null("GameState")
+	return state != null and state.get("reduce_effects") == true
 
 
 func _draw() -> void:
@@ -48,7 +62,7 @@ func _draw() -> void:
 	draw_circle(Vector2(0, 10), s * 1.0, Color(0.35, 0.3, 0.8, 0.05))
 
 	# Raio de entrada.
-	var source := entry + Vector2(-beam_length, 30)
+	var source := entry + Vector2(-beam_length, 30) + _pointer_offset
 	_glow_line(source, entry, Color(1.0, 0.94, 0.7), 1.0)
 
 	# Luz atravessando o vidro.
@@ -84,6 +98,25 @@ func _draw() -> void:
 	draw_circle(top.lerp(right, edge_t), 5.0, Color(1, 1, 1, 0.5))
 	draw_circle(entry, 7.0 + breathe * 3.0, Color(1, 1, 0.9, 0.45))
 	draw_circle(exit_point, 8.0 + breathe * 3.0, Color(1, 1, 1, 0.4))
+	_draw_orbiting_shards()
+
+
+func _draw_orbiting_shards() -> void:
+	var count := clampi(shards_lit, 0, shard_count)
+	for i in range(count):
+		var angle := time * 0.13 + TAU * float(i) / float(count) - PI * 0.5
+		var center := Vector2(cos(angle) * prism_size * 1.4, sin(angle) * prism_size * 1.2)
+		var turn := angle + time * 0.22
+		var color: Color = SPECTRUM[i % SPECTRUM.size()]
+		var polygon := PackedVector2Array([
+			center + Vector2(0, -11).rotated(turn),
+			center + Vector2(8, 6).rotated(turn),
+			center + Vector2(-6, 8).rotated(turn),
+		])
+		draw_circle(center, 18.0, Color(color.r, color.g, color.b, 0.06))
+		draw_colored_polygon(polygon, Color(color.r, color.g, color.b, 0.3))
+		polygon.append(polygon[0])
+		draw_polyline(polygon, Color(color.r, color.g, color.b, 0.8), 1.5, true)
 
 
 func _draw_shards(corners: Array) -> void:
