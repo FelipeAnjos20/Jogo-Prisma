@@ -47,6 +47,9 @@ const PECAS_NOVAS := {
 	8: {"peca": "prisma", "titulo": "Prisma", "texto": "Separa a luz branca em três: vermelho ▲ para um lado, verde ● reto e azul ■ para o outro."},
 }
 
+const WEB_FONT := "res://assets/fonts/DejaVuSans.ttf"
+const WEB_FONT_BOLD := "res://assets/fonts/DejaVuSans-Bold.ttf"
+
 static var _fonts := {}
 
 
@@ -66,6 +69,13 @@ static func light_color(color_name: String) -> Color:
 static func font(weight := 500) -> Font:
 	if _fonts.has(weight):
 		return _fonts[weight]
+
+	# No navegador nao ha fontes do sistema: usa a fonte livre que vai junto com o jogo
+	# (tem todos os simbolos usados, como ★ ▲ ● ■).
+	if OS.has_feature("web"):
+		var embedded: Font = load(WEB_FONT_BOLD if weight >= 650 else WEB_FONT)
+		_fonts[weight] = embedded
+		return embedded
 
 	var system_font := SystemFont.new()
 	system_font.font_names = PackedStringArray(["Segoe UI", "Bahnschrift", "Helvetica Neue", "Arial", "Sans-Serif"])

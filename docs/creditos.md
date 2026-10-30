@@ -28,6 +28,12 @@ Professor: Diego Sauter Possamai.
   desenhados via codigo (`_draw()` em GDScript), sem imagens externas.
 - O icone do projeto (`icon.svg`) e um prisma vetorial feito para o projeto.
 
+## Fonte
+
+- Versao para navegador: [DejaVu Sans](https://dejavu-fonts.github.io/) (`assets/fonts/`),
+  licenca livre da Bitstream Vera/DejaVu (texto em `assets/fonts/LICENSE_DejaVu.txt`).
+  No Windows o jogo usa a fonte do sistema (Segoe UI).
+
 ## Audio
 
 - Efeitos sonoros: 11 efeitos sintetizados por codigo em `scripts/sfx.gd`, sem

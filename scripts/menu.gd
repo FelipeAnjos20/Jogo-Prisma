@@ -120,11 +120,14 @@ func _build_main_panel() -> void:
 		button.pressed.connect(entry[1])
 		column.add_child(button)
 
-	# Creditos e Sair dividem a ultima linha.
+	# Creditos e Sair dividem a ultima linha. No navegador nao existe "Sair" (basta fechar a aba).
 	var last_row := HBoxContainer.new()
 	last_row.add_theme_constant_override("separation", 12)
 	column.add_child(last_row)
-	for entry in [["Créditos", func() -> void: _show_panel(_credits_panel)], ["Sair", func() -> void: get_tree().quit()]]:
+	var last_entries := [["Créditos", func() -> void: _show_panel(_credits_panel)]]
+	if not OS.has_feature("web"):
+		last_entries.append(["Sair", func() -> void: get_tree().quit()])
+	for entry in last_entries:
 		var button := UI.make_button(entry[0], 20)
 		button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		button.pressed.connect(entry[1])

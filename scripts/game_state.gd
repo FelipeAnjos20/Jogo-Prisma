@@ -6,6 +6,7 @@ const SAVE_PATH := "user://prisma_save.cfg"
 const LevelData := preload("res://scripts/levels.gd")
 const Geometria = preload("res://scripts/geometria.gd")
 const EchoBrain := preload("res://scripts/echo_brain.gd")
+const UI := preload("res://scripts/ui_kit.gd")
 
 var levels: Array = []
 var unlocked_level := 0
@@ -55,6 +56,7 @@ func _ready() -> void:
 	load_data()
 	apply_settings()
 	_build_focus_ring()
+	_use_web_font()
 	_apply_focus_style()
 
 
@@ -106,6 +108,13 @@ func _set_pad_mode(value: bool) -> void:
 		return
 	last_input_pad = value
 	_apply_focus_style()
+
+
+# No navegador o tema (botoes, campos de texto) tambem usa a fonte que vai junto com o jogo.
+func _use_web_font() -> void:
+	var theme := ThemeDB.get_project_theme()
+	if OS.has_feature("web") and theme != null:
+		theme.default_font = UI.font(600)
 
 
 func _build_focus_ring() -> void:
