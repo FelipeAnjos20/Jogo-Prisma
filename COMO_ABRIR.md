@@ -3,12 +3,24 @@
 Tutorial passo a passo para abrir e jogar o PRISMA. Leva cerca de **5 minutos** e não exige
 conhecimento de programação. Versão para imprimir: [docs/Como_Abrir.pdf](docs/Como_Abrir.pdf).
 
-Escolha uma das duas opções:
+Escolha uma das opções:
 
 | Opção | Para quem | O que precisa |
 | --- | --- | --- |
-| **[A — Só jogar](#opção-a--só-jogar-windows)** (recomendada) | Quem quer jogar | Windows 10 ou 11 |
+| **[Jogar no navegador](#jogar-no-navegador-mais-fácil)** (mais fácil) | Quem quer jogar sem baixar nada | Chrome, Edge ou Firefox no computador |
+| **[A — Baixar e jogar](#opção-a--só-jogar-windows)** | Quem quer o jogo instalado no Windows | Windows 10 ou 11 |
 | **[B — Abrir o projeto no Godot](#opção-b--abrir-o-projeto-no-godot)** | Quem quer ver o código, as cenas e rodar pelo motor | Windows, Linux ou macOS + Godot 4.6.3 |
+
+---
+
+## Jogar no navegador (mais fácil)
+
+1. Abra **https://felipeanjos20.github.io/Jogo-Prisma/** no computador (Chrome, Edge ou Firefox).
+2. Espere a barra de carregamento terminar (alguns segundos, só na primeira vez).
+3. Clique em **Jogar**. Não precisa baixar, instalar nem criar conta, e não aparece aviso de antivírus.
+
+> O progresso fica salvo no próprio navegador. Use teclado e mouse (celular não é suportado).
+> Se a tela ficar preta, atualize a página (F5) ou use outro navegador.
 
 ---
 

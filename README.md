@@ -10,8 +10,9 @@ efeito imediato e visível no caminho do feixe.
 A cada sala concluída o jogador recupera um dos **10 fragmentos do Prisma de Luz**, guiado pelo
 assistente **Echo**.
 
-> ## ▶ Primeira vez? Comece por aqui: **[Como abrir o PRISMA no seu computador](COMO_ABRIR.md)**
-> Tutorial passo a passo (5 minutos) para baixar, abrir e jogar, sem precisar de conhecimento técnico.
+> ## ▶ Jogue agora no navegador: **[felipeanjos20.github.io/Jogo-Prisma](https://felipeanjos20.github.io/Jogo-Prisma/)**
+> Sem baixar nem instalar nada (use um computador com Chrome, Edge ou Firefox).
+> Prefere baixar ou abrir pelo Godot? Veja o tutorial **[Como abrir o PRISMA no seu computador](COMO_ABRIR.md)**.
 
 ![Menu principal](docs/img/menu.png)
 
@@ -37,7 +38,11 @@ assistente **Echo**.
 
 ## 1. Jogar agora (executável pronto)
 
-Para só jogar, sem instalar nada:
+**No navegador (mais fácil):** abra **https://felipeanjos20.github.io/Jogo-Prisma/**, espere carregar
+(alguns segundos) e clique em **Jogar**. Funciona no Chrome, Edge e Firefox, em computador com
+teclado e mouse; o progresso fica salvo no próprio navegador.
+
+**No Windows (executável):**
 
 1. Abra a página de **[Releases](https://github.com/FelipeAnjos20/Jogo-Prisma/releases/latest)** e
    baixe o arquivo `Prisma-windows-vX.Y.Z.zip`.

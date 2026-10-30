@@ -52,7 +52,9 @@ func _draw() -> void:
 	# Instrucao.
 	var font := UI.font(700)
 	var text := "Arraste a ponta, use a roda do mouse ou aperte E"
-	var box := Rect2(Vector2(-210, 88 + bob), Vector2(420, 34))
+	# A caixa acompanha a largura do texto (a fonte do navegador e mais larga que a do Windows).
+	var width := font.get_string_size(text, HORIZONTAL_ALIGNMENT_LEFT, -1, 16).x + 32.0
+	var box := Rect2(Vector2(-width * 0.5, 88 + bob), Vector2(width, 34))
 	draw_rect(box, Color(0.04, 0.07, 0.13, 0.92))
 	draw_rect(box, Color(accent.r, accent.g, accent.b, 0.8), false, 1.5)
 	draw_string(font, box.position + Vector2(0, 23), text, HORIZONTAL_ALIGNMENT_CENTER, box.size.x, 16, Color(1.0, 0.96, 0.84))
