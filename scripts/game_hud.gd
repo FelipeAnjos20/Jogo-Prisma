@@ -27,6 +27,13 @@ var _toast_label: Label
 var _toast_title: Label
 var _toast_tween: Tween
 var _toast_anchor := Vector2(320, 96)
+var _toast_icon: EchoIcon
+var _typing := false
+var _typed_chars := 0
+
+var _tooltip: PanelContainer
+var _tooltip_title: Label
+var _tooltip_body: Label
 
 var _banner: VBoxContainer
 var _banner_title: Label
@@ -41,6 +48,10 @@ var _victory_stars: StarRow
 var _victory_info: Label
 var _victory_record: Label
 var _next_button: Button
+var _victory_echo: Label
+var _victory_echo_icon: EchoIcon
+var _why_button: Button
+var _why_label: Label
 
 var _pause_root: Control
 var _resume_button: Button
@@ -48,7 +59,7 @@ var _resume_button: Button
 var _help_label: Label
 var _help_pad_mode := false
 
-const HELP_MOUSE := "Clique: selecionar   ·   Arrastar, Q/E ou roda do mouse: girar   ·   1-9 / Tab: trocar   ·   Z: desfazer   ·   H: dica (2x mostra o ângulo)   ·   M: música"
+const HELP_MOUSE := "Clique: selecionar   ·   Arrastar, Q/E ou roda: girar   ·   1-9 / Tab: trocar   ·   Z: desfazer   ·   H: dica   ·   G: ângulos   ·   Passe o mouse nas peças   ·   M: música"
 const HELP_PAD := "Controle:  ◀ ▶ girar   ·   LB / RB trocar espelho   ·   A girar   ·   B desfazer   ·   Y dica   ·   X reiniciar   ·   Start pausa"
 
 
@@ -57,6 +68,7 @@ func _ready() -> void:
 	_build_top_bar()
 	_build_bottom_help()
 	_build_toast()
+	_build_tooltip()
 	_build_banner()
 	_build_flash()
 	_build_victory()
@@ -101,9 +113,17 @@ func set_toast_anchor(anchor: Vector2) -> void:
 	_toast_anchor = anchor
 
 
-func show_toast(title: String, text: String, duration := 6.0) -> void:
+# mood: "neutral", "happy", "thinking" ou "surprised" (muda a expressao do Echo).
+# O texto aparece letra por letra, com um som curto de "fala".
+func show_toast(title: String, text: String, duration := 6.0, mood := "neutral") -> void:
 	_toast_title.text = title
 	_toast_label.text = text
+	_toast_icon.mood = mood
+	_toast_icon.talking = true
+	_typing = true
+	_typed_chars = 0
+	_toast_label.visible_characters = 0
+	var typing_time := clampf(text.length() * 0.022, 0.2, 2.2)
 	if _toast_tween != null:
 		_toast_tween.kill()
 	_toast_holder.visible = true
@@ -113,6 +133,8 @@ func show_toast(title: String, text: String, duration := 6.0) -> void:
 	_toast_tween.set_parallel(true)
 	_toast_tween.tween_property(_toast_holder, "modulate:a", 1.0, 0.25)
 	_toast_tween.tween_property(_toast_holder, "position:y", _toast_anchor.y, 0.3).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	_toast_tween.tween_property(_toast_label, "visible_characters", text.length(), typing_time)
+	_toast_tween.chain().tween_callback(_finish_typing)
 	_toast_tween.chain().tween_interval(duration)
 	_toast_tween.chain().tween_property(_toast_holder, "modulate:a", 0.0, 0.5)
 	_toast_tween.chain().tween_callback(func() -> void: _toast_holder.visible = false)
@@ -122,9 +144,45 @@ func hide_toast() -> void:
 	if _toast_tween != null:
 		_toast_tween.kill()
 	_toast_holder.visible = false
+	_finish_typing()
+
+
+func is_toast_visible() -> bool:
+	return _toast_holder.visible
+
+
+func _finish_typing() -> void:
+	_typing = false
+	_toast_label.visible_characters = -1
+	if _toast_icon != null:
+		_toast_icon.talking = false
+
+
+# Caixa de informacao que aparece ao passar o mouse sobre uma peca do puzzle.
+func show_tooltip(title: String, body: String, screen_position: Vector2) -> void:
+	_tooltip_title.text = title
+	_tooltip_body.text = body
+	_tooltip.visible = true
+	_tooltip.reset_size()
+	var tooltip_size := _tooltip.size
+	var position_t := screen_position + Vector2(20, 22)
+	if position_t.x + tooltip_size.x > 1268.0:
+		position_t.x = screen_position.x - tooltip_size.x - 14.0
+	if position_t.y + tooltip_size.y > 690.0:
+		position_t.y = screen_position.y - tooltip_size.y - 14.0
+	_tooltip.position = position_t
+
+
+func hide_tooltip() -> void:
+	_tooltip.visible = false
 
 
 func _process(delta: float) -> void:
+	# Som curto de "fala" enquanto o texto do Echo e digitado.
+	if _typing and _toast_label.visible_characters - _typed_chars >= 3:
+		_typed_chars = _toast_label.visible_characters
+		Sfx.play("talk", randf_range(0.9, 1.15))
+
 	# A linha de ajuda mostra os comandos do controle quando ele esta sendo usado.
 	var pad_mode: bool = GameState.last_input_pad and Input.get_connected_joypads().size() > 0
 	if _help_label != null and pad_mode != _help_pad_mode:
@@ -144,8 +202,16 @@ func flash(strength := 0.55) -> void:
 	tween.tween_property(_flash, "color:a", 0.0, 0.6).set_ease(Tween.EASE_OUT)
 
 
-func show_victory(result: Dictionary, rotations: int, par: int, is_last: bool, seconds: float) -> void:
+func show_victory(result: Dictionary, rotations: int, par: int, is_last: bool, seconds: float, echo_comment := "", explanation := "") -> void:
 	hide_toast()
+	hide_tooltip()
+	_victory_echo.text = echo_comment
+	_victory_echo.get_parent().visible = echo_comment != ""
+	_victory_echo_icon.mood = "happy"
+	_why_label.text = explanation
+	_why_label.visible = false
+	_why_button.visible = explanation != ""
+	_why_button.text = "Por que funcionou?  ▾"
 	var earned: int = result["stars"]
 	var whole_seconds := int(seconds)
 	var fragments := GameState.completed_levels()
@@ -289,7 +355,8 @@ func _build_toast() -> void:
 	row.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_toast.add_child(row)
 
-	row.add_child(EchoIcon.new())
+	_toast_icon = EchoIcon.new()
+	row.add_child(_toast_icon)
 
 	var column := VBoxContainer.new()
 	column.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -301,8 +368,32 @@ func _build_toast() -> void:
 	_toast_label = UI.make_label("", 17, UI.TEXT, 500)
 	_toast_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	_toast_label.custom_minimum_size.x = 540
+	# O tamanho do balao considera o texto inteiro, entao ele nao muda durante a digitacao.
+	_toast_label.visible_characters_behavior = TextServer.VC_CHARS_AFTER_SHAPING
 	column.add_child(_toast_title)
 	column.add_child(_toast_label)
+
+
+func _build_tooltip() -> void:
+	_tooltip = UI.make_panel(Color(0.03, 0.06, 0.12, 0.96), Color(1.0, 0.86, 0.36, 0.6), 10, 10)
+	_tooltip.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_tooltip.visible = false
+	add_child(_tooltip)
+	var column := VBoxContainer.new()
+	column.add_theme_constant_override("separation", 2)
+	column.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_tooltip.add_child(column)
+	_tooltip_title = UI.make_label("", 15, UI.ACCENT, 800)
+	_tooltip_body = UI.make_label("", 14, UI.TEXT, 500)
+	_tooltip_body.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	_tooltip_body.custom_minimum_size.x = 290
+	column.add_child(_tooltip_title)
+	column.add_child(_tooltip_body)
+
+
+func _toggle_explanation() -> void:
+	_why_label.visible = not _why_label.visible
+	_why_button.text = "Esconder explicação  ▴" if _why_label.visible else "Por que funcionou?  ▾"
 
 
 func _build_banner() -> void:
@@ -389,6 +480,29 @@ func _build_victory() -> void:
 	_victory_record.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	column.add_child(_victory_record)
 
+	var echo_row := HBoxContainer.new()
+	echo_row.alignment = BoxContainer.ALIGNMENT_CENTER
+	echo_row.add_theme_constant_override("separation", 10)
+	column.add_child(echo_row)
+	_victory_echo_icon = EchoIcon.new()
+	echo_row.add_child(_victory_echo_icon)
+	_victory_echo = UI.make_label("", 17, Color(0.75, 0.95, 1.0), 600)
+	_victory_echo.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	_victory_echo.custom_minimum_size.x = 420
+	_victory_echo.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	echo_row.add_child(_victory_echo)
+
+	_why_button = UI.make_button("Por que funcionou?  ▾", 16)
+	_why_button.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	_why_button.pressed.connect(_toggle_explanation)
+	column.add_child(_why_button)
+
+	_why_label = UI.make_label("", 15, UI.TEXT, 500)
+	_why_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	_why_label.custom_minimum_size.x = 520
+	_why_label.visible = false
+	column.add_child(_why_label)
+
 	var buttons := HBoxContainer.new()
 	buttons.alignment = BoxContainer.ALIGNMENT_CENTER
 	buttons.add_theme_constant_override("separation", 10)
@@ -467,6 +581,9 @@ class StarRow extends Control:
 
 
 class EchoIcon extends Control:
+	# Expressoes: neutral, happy, thinking, surprised. "talking" faz o Echo pulsar enquanto fala.
+	var mood := "neutral"
+	var talking := false
 	var _time := 0.0
 
 	func _init() -> void:
@@ -478,15 +595,35 @@ class EchoIcon extends Control:
 		queue_redraw()
 
 	func _draw() -> void:
-		var center := size * 0.5 + Vector2(0, sin(_time * 2.4) * 2.0)
-		var pulse := 0.5 + 0.5 * sin(_time * 3.0)
-		draw_circle(center, 22.0, Color(0.3, 0.8, 1.0, 0.12 + pulse * 0.08))
+		var bounce_speed := 6.0 if mood == "happy" else 2.4
+		var center := size * 0.5 + Vector2(0, sin(_time * bounce_speed) * 2.0)
+		var pulse := 0.5 + 0.5 * sin(_time * (14.0 if talking else 3.0))
+		var glow := Color(0.3, 0.8, 1.0)
+		if mood == "happy":
+			glow = Color(0.5, 1.0, 0.6)
+		elif mood == "thinking":
+			glow = Color(1.0, 0.85, 0.4)
+		elif mood == "surprised":
+			glow = Color(1.0, 0.55, 0.6)
+		draw_circle(center, 22.0, Color(glow.r, glow.g, glow.b, 0.12 + pulse * 0.1))
 		draw_circle(center, 16.0, Color(0.12, 0.3, 0.5))
-		draw_circle(center, 16.0, Color(0.55, 0.9, 1.0), false, 2.0, true)
+		draw_circle(center, 16.0, glow.lightened(0.3), false, 2.0, true)
+
+		if mood == "happy":
+			# Olho sorrindo (arco para cima).
+			draw_arc(center + Vector2(0, 3), 6.0, PI * 1.1, PI * 1.9, 12, Color(0.85, 1.0, 1.0), 3.0, true)
+			return
+		var eye_radius := 7.5 if mood == "surprised" else 6.0
+		var pupil := Vector2(1.5, 0)
+		if mood == "thinking":
+			pupil = Vector2(2.5, -2.5)
+			for i in range(3):
+				var alpha := 0.35 + 0.65 * (0.5 + 0.5 * sin(_time * 4.0 - i))
+				draw_circle(center + Vector2(10 + i * 6, -19), 2.0, Color(1.0, 0.9, 0.5, alpha))
 		var blink := 0.15 if fmod(_time, 3.2) < 0.12 else 1.0
 		draw_set_transform(center, 0.0, Vector2(1.0, blink))
-		draw_circle(Vector2.ZERO, 6.0, Color(0.85, 1.0, 1.0))
-		draw_circle(Vector2(1.5, 0), 2.5, Color(0.05, 0.15, 0.25))
+		draw_circle(Vector2.ZERO, eye_radius, Color(0.85, 1.0, 1.0))
+		draw_circle(pupil, 2.0 if mood == "surprised" else 2.5, Color(0.05, 0.15, 0.25))
 		draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
 
 

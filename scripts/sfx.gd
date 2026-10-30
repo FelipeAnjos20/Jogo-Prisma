@@ -29,6 +29,8 @@ func _ready() -> void:
 		add_child(player)
 		_players.append(player)
 
+	# Som curto de "fala" do Echo (tocado enquanto o texto e digitado).
+	_streams["talk"] = _synth([[1050.0, 0.0, 0.03]], 0.035, "sine", 80.0, 0.09)
 	_streams["hover"] = _synth([[1400.0, 0.0, 0.035]], 0.04, "sine", 60.0, 0.12)
 	_streams["click"] = _synth([[900.0, 0.0, 0.05], [1350.0, 0.02, 0.05]], 0.08, "tri", 40.0, 0.35)
 	_streams["select"] = _synth([[660.0, 0.0, 0.08], [990.0, 0.05, 0.1]], 0.16, "sine", 22.0, 0.35)

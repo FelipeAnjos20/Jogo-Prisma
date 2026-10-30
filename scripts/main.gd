@@ -9,12 +9,29 @@ const CrystalScript := preload("res://scripts/crystal.gd")
 const ObstacleScript := preload("res://scripts/obstacle.gd")
 const PrismScript := preload("res://scripts/prism.gd")
 const TutorialScript := preload("res://scripts/tutorial_pointer.gd")
+const AngleGuideScript := preload("res://scripts/angle_guide.gd")
+const EchoBrain := preload("res://scripts/echo_brain.gd")
+const Geometria = preload("res://scripts/geometria.gd")
+const UI := preload("res://scripts/ui_kit.gd")
 
 const Feixe := preload("res://scripts/feixe.gd")
 
 const ROOM_RECT := Feixe.SALA
 const INTRO_TIME := 0.7
 const IDLE_HINT_TIME := 45.0
+const TOOLTIP_DELAY := 0.35
+# Distancia (da borda do cristal) para o Echo dizer "Quase!" e variacoes para o "quente ou frio".
+const NEAR_MISS_DISTANCE := 100.0
+const WARMER_DELTA := 60.0
+const COLDER_DELTA := 150.0
+const WARM_COLD_INTERVAL := 6.0
+const COLOR_SYMBOLS := {"red": "▲", "green": "●", "blue": "■"}
+const COLOR_FEMININE := {"red": "vermelha", "green": "verde", "blue": "azul"}
+
+# Prioridade das falas do Echo: uma fala so interrompe outra de prioridade menor ou igual.
+const PRIORITY_REACTION := 1
+const PRIORITY_EVENT := 2
+const PRIORITY_HINT := 3
 const DRAG_THRESHOLD := 8.0
 const DRAG_MIN_RADIUS := 22.0
 const TOAST_SIZE := Vector2(640, 92)
@@ -72,6 +89,27 @@ var _locked_tip_given := false
 var _load_token := 0
 var _tutorial: Node2D = null
 
+# Echo que conversa e reage
+var _echo := EchoBrain.new()
+var _toast_priority := 0
+var _toast_until := 0.0
+var _best_lit := 0
+var _rotations_since_progress := 0
+var _struggle_tip_given := false
+var _revisit_tip_given := false
+var _config_visits := {}
+var _reacted_config := ""
+var _wrong_color_warned := {}
+var _last_closest := INF
+var _last_warm_cold := -100.0
+var _last_near_said := -1
+
+# Guia de angulos e caixa de informacao
+var _angle_guide: Node2D = null
+var _hover_key := ""
+var _hover_time := 0.0
+var _victory_reflections: Array = []
+
 # Arrastar para girar.
 var _drag_mirror: Node2D = null
 var _drag_origin := Vector2.ZERO
@@ -95,6 +133,8 @@ func _ready() -> void:
 	hud.set_music_state(GameState.music_enabled)
 
 	Sfx.play_music("res://assets/audio/gameplay_music.mp3", -16.0)
+	_angle_guide = AngleGuideScript.new()
+	$Puzzle.add_child(_angle_guide)
 	_load_level(clampi(GameState.current_level, 0, GameState.level_count() - 1))
 
 
@@ -129,7 +169,22 @@ func _load_level(index: int) -> void:
 	_hint_stage = 0
 	_idle_hint_given = false
 	_locked_tip_given = false
+	_toast_priority = 0
+	_toast_until = 0.0
+	_best_lit = 0
+	_rotations_since_progress = 0
+	_struggle_tip_given = false
+	_revisit_tip_given = false
+	_config_visits.clear()
+	_reacted_config = ""
+	_wrong_color_warned.clear()
+	_last_closest = INF
+	_last_warm_cold = -100.0
+	_last_near_said = -1
+	_hover_key = ""
+	_hover_time = 0.0
 	get_tree().paused = false
+	hud.hide_tooltip()
 	hud.show_pause(false)
 	hud.hide_victory()
 	hud.hide_toast()
@@ -206,7 +261,7 @@ func _load_level(index: int) -> void:
 	var token := _load_token
 	await get_tree().create_timer(1.6).timeout
 	if token == _load_token and not completed and index < INTRO_MESSAGES.size():
-		hud.show_toast("ECHO", INTRO_MESSAGES[index], 7.0)
+		_say(INTRO_MESSAGES[index], 7.0, "neutral", PRIORITY_EVENT)
 
 
 func _pop_in(nodes: Array) -> void:
@@ -255,22 +310,33 @@ func _process(delta: float) -> void:
 	# Os cristais so mudam de estado com os espelhos parados, evitando "piscadas" durante o giro.
 	if _intro_left <= 0.0 and _all_settled():
 		var changed := false
+		var turned_on := false
+		var turned_off := false
 		for i in range(crystals.size()):
 			var on: bool = lit[i]
 			if on != lit_state[i]:
 				lit_state[i] = on
 				crystals[i].set_lit(on)
 				changed = true
+				turned_on = turned_on or on
+				turned_off = turned_off or not on
 				if not completed:
 					Sfx.play("crystal_on" if on else "crystal_off", 1.0 + 0.1 * i)
 		if changed:
 			_update_stats()
 		if not completed and _lit_count() == crystals.size():
 			_complete_level()
+		elif not completed:
+			_react_to_crystals(turned_on, turned_off)
+			_react_to_configuration()
 
 	if not completed and not _hint_used and not _idle_hint_given and _level_time > IDLE_HINT_TIME:
 		_idle_hint_given = true
-		hud.show_toast("ECHO", "Travou? Aperte H (ou o botão Dica) e eu te dou uma pista.", 5.0)
+		_say(_echo.say("idle"), 5.0, "thinking", PRIORITY_REACTION)
+
+	var guide_target: Node2D = selected if selected != null else hovered
+	_angle_guide.update_guide(null if completed else guide_target, beam.reflections, GameState.show_angles)
+	_update_tooltip(delta)
 
 	_shake = move_toward(_shake, 0.0, delta * 2.2)
 	camera.offset = Vector2(randf_range(-1.0, 1.0), randf_range(-1.0, 1.0)) * 10.0 * _shake * _shake
@@ -350,6 +416,8 @@ func _unhandled_input(event: InputEvent) -> void:
 			_toggle_music()
 		KEY_H:
 			_show_hint()
+		KEY_G:
+			_toggle_angles()
 		KEY_N, KEY_ENTER, KEY_KP_ENTER, KEY_SPACE:
 			if completed:
 				_advance()
@@ -514,7 +582,7 @@ func _locked_feedback(mirror: Node2D) -> void:
 	Sfx.play("locked")
 	if not _locked_tip_given:
 		_locked_tip_given = true
-		hud.show_toast("ECHO", "Esse espelho está travado: ele reflete a luz, mas não gira.", 3.5)
+		_say("Esse espelho está travado: ele reflete a luz, mas não gira.", 3.5, "surprised", PRIORITY_EVENT)
 
 
 func _select(mirror: Node2D, with_sound := true) -> void:
@@ -547,6 +615,7 @@ func _on_mirror_rotated(mirror: Node2D, previous_degrees: float) -> void:
 		_tutorial = null
 	history.append([mirror, previous_degrees])
 	rotation_count += 1
+	_rotations_since_progress += 1
 	Sfx.play("rotate", randf_range(0.92, 1.1))
 	_update_stats()
 
@@ -574,17 +643,17 @@ func _show_hint() -> void:
 
 	if _hint_stage == 0:
 		_hint_stage = 1
-		hud.show_toast("DICA DO ECHO", "%s\n(Aperte H de novo e eu mostro o ângulo de um espelho.)" % level["hint"], 9.0)
+		_say("%s\n(Aperte H de novo e eu mostro o ângulo de um espelho.)" % level["hint"], 9.0, "thinking", PRIORITY_HINT, "DICA DO ECHO")
 		return
 
 	var mirror := _next_wrong_mirror()
 	if mirror == null:
-		hud.show_toast("DICA DO ECHO", "Os ângulos já estão certos! Espere a luz se acomodar.", 4.0)
+		_say("Os ângulos já estão certos! Espere a luz se acomodar.", 4.0, "happy", PRIORITY_HINT, "DICA DO ECHO")
 		return
 	var index := mirrors.find(mirror)
 	mirror.show_ghost(float(level["solution"][index]))
 	_select(mirror)
-	hud.show_toast("DICA DO ECHO", "Gire o espelho %d até o contorno verde pontilhado." % mirror.number, 6.0)
+	_say("Gire o espelho %d até o contorno verde pontilhado." % mirror.number, 6.0, "thinking", PRIORITY_HINT, "DICA DO ECHO")
 
 
 func _next_wrong_mirror() -> Node2D:
@@ -612,9 +681,12 @@ func _complete_level() -> void:
 	var result := GameState.record_result(level_index, rotation_count)
 	var is_last := level_index == GameState.level_count() - 1
 
+	var explanation_reflections: Array = beam.reflections.duplicate()
 	for mirror in mirrors:
 		mirror.set_selected(false)
 		mirror.has_ghost = false
+	_victory_reflections = explanation_reflections
+	hud.hide_tooltip()
 	_shake = 1.0
 	hud.flash(0.5)
 	hud.hide_toast()
@@ -623,7 +695,8 @@ func _complete_level() -> void:
 	await get_tree().create_timer(1.0).timeout
 	if token != _load_token:
 		return
-	hud.show_victory(result, rotation_count, int(level["par"]), is_last, _level_time)
+	var comment: String = _echo.victory_comment(int(result["stars"]), rotation_count, int(level["par"]), _hint_used, bool(result["record"]), _level_time)
+	hud.show_victory(result, rotation_count, int(level["par"]), is_last, _level_time, comment, _build_explanation())
 
 
 func _advance() -> void:
@@ -662,4 +735,232 @@ func _toggle_music() -> void:
 	var enabled := GameState.toggle_music()
 	hud.set_music_state(enabled)
 	if not get_tree().paused:
-		hud.show_toast("ECHO", "Música ligada." if enabled else "Música desligada.", 1.5)
+		_say("Música ligada." if enabled else "Música desligada.", 1.5, "neutral", PRIORITY_REACTION)
+
+
+
+# ---------------------------------------------------------------- Echo que conversa e reage
+
+func _now() -> float:
+	return Time.get_ticks_msec() / 1000.0
+
+
+# Mostra uma fala do Echo respeitando a prioridade da fala que esta na tela.
+func _say(text: String, duration: float, mood: String, priority: int, title := "ECHO") -> bool:
+	if _now() < _toast_until and priority < _toast_priority:
+		return false
+	_toast_priority = priority
+	_toast_until = _now() + duration + text.length() * 0.022
+	hud.show_toast(title, text, duration, mood)
+	return true
+
+
+func _react_to_crystals(turned_on: bool, turned_off: bool) -> void:
+	var lit := _lit_count()
+	if lit > _best_lit:
+		_best_lit = lit
+		_rotations_since_progress = 0
+	if turned_on and crystals.size() > 1:
+		var remaining := crystals.size() - lit
+		var remaining_text := "Falta só 1." if remaining == 1 else "Faltam %d." % remaining
+		_say(_echo.say("crystal_on", [remaining_text]), 3.5, "happy", PRIORITY_EVENT)
+	elif turned_off and rotation_count > 0:
+		_say(_echo.say("crystal_off"), 3.5, "surprised", PRIORITY_EVENT)
+
+
+# Roda uma vez para cada nova posicao dos espelhos (depois que eles param de girar).
+func _react_to_configuration() -> void:
+	var signature := _configuration_signature()
+	if signature == _reacted_config:
+		return
+	_reacted_config = signature
+	if rotation_count == 0:
+		return
+
+	_config_visits[signature] = int(_config_visits.get(signature, 0)) + 1
+	if _config_visits[signature] >= 3 and not _revisit_tip_given:
+		_revisit_tip_given = true
+		_say(_echo.say("revisit"), 4.5, "thinking", PRIORITY_REACTION)
+		return
+
+	if not _struggle_tip_given and not _hint_used and _rotations_since_progress >= maxi(8, int(level["par"]) * 2):
+		_struggle_tip_given = true
+		_say(_echo.say("struggle"), 5.0, "thinking", PRIORITY_REACTION)
+		return
+
+	_react_to_beam()
+
+
+# Reage ao caminho da luz depois de cada giro:
+# cor errada > "Quase!" (passou perto) > "quente ou frio" (aproximou ou afastou do cristal).
+func _react_to_beam() -> void:
+	var overall_closest := INF
+	var near_message := ""
+	var near_distance := -1
+	for i in range(crystals.size()):
+		if lit_state[i]:
+			continue
+		var crystal: Node2D = crystals[i]
+		var center := crystal.global_position
+		var radius: float = crystal.get_light_radius()
+		var closest := INF
+		var touched := false
+		for segment in beam.segments:
+			var a: Vector2 = segment["a"]
+			var b: Vector2 = segment["b"]
+			closest = minf(closest, center.distance_to(Geometry2D.get_closest_point_to_segment(center, a, b)))
+			if b.distance_to(center) <= radius + 1.5:
+				touched = true
+		var color_name: String = crystal.required_color
+		if touched and color_name != "any":
+			if not _wrong_color_warned.has(i):
+				_wrong_color_warned[i] = true
+				_say(_echo.say("wrong_color", [COLOR_FEMININE.get(color_name, color_name), COLOR_SYMBOLS.get(color_name, "")]), 4.5, "thinking", PRIORITY_REACTION)
+				return
+			continue
+		var edge_distance := maxf(0.0, closest - radius)
+		overall_closest = minf(overall_closest, edge_distance)
+		# So comenta de novo se a distancia mudou (girar outro espelho nao repete o mesmo "Quase!").
+		var rounded := int(round(edge_distance))
+		if near_message == "" and edge_distance > 0.0 and edge_distance < NEAR_MISS_DISTANCE and rounded != _last_near_said:
+			near_message = _echo.say("near_miss", [rounded])
+			near_distance = rounded
+
+	var previous := _last_closest
+	_last_closest = overall_closest
+	if _now() - _last_warm_cold < WARM_COLD_INTERVAL:
+		return
+	if near_message != "":
+		if _say(near_message, 4.0, "surprised", PRIORITY_REACTION):
+			_last_warm_cold = _now()
+			_last_near_said = near_distance
+		return
+	if previous == INF or overall_closest == INF:
+		return
+	if overall_closest < previous - WARMER_DELTA and overall_closest < 250.0:
+		if _say(_echo.say("warmer"), 3.5, "happy", PRIORITY_REACTION):
+			_last_warm_cold = _now()
+	elif overall_closest > previous + COLDER_DELTA and previous < 150.0:
+		if _say(_echo.say("colder"), 3.5, "thinking", PRIORITY_REACTION):
+			_last_warm_cold = _now()
+
+
+func _configuration_signature() -> String:
+	var parts: Array = []
+	for mirror in rotatable:
+		parts.append(str(int(round(fposmod(mirror.target_degrees, 180.0)))))
+	return ",".join(parts)
+
+
+func _toggle_angles() -> void:
+	GameState.set_show_angles(not GameState.show_angles)
+	Sfx.play("click")
+	_say(_echo.say("angles_on" if GameState.show_angles else "angles_off"), 2.5, "neutral", PRIORITY_REACTION)
+
+
+# ---------------------------------------------------------------- caixa de informacao das pecas
+
+func _update_tooltip(delta: float) -> void:
+	if completed or get_tree().paused or _drag_mirror != null:
+		_hover_key = ""
+		hud.hide_tooltip()
+		return
+	var info := _element_info_at(get_global_mouse_position())
+	if info.is_empty():
+		_hover_key = ""
+		_hover_time = 0.0
+		hud.hide_tooltip()
+		return
+	if info["key"] != _hover_key:
+		_hover_key = info["key"]
+		_hover_time = 0.0
+		hud.hide_tooltip()
+	_hover_time += delta
+	if _hover_time >= TOOLTIP_DELAY:
+		hud.show_tooltip(info["title"], info["body"], get_viewport().get_mouse_position())
+
+
+func _element_info_at(point: Vector2) -> Dictionary:
+	for i in range(mirrors.size() - 1, -1, -1):
+		var mirror: Node2D = mirrors[i]
+		if mirror.contains_global_point(point):
+			var angle := int(round(Geometria.inclinacao_espelho(mirror.target_degrees))) % 180
+			if mirror.is_splitter():
+				return {"key": "m%d" % i, "title": "Divisor de feixe" + ("" if mirror.can_rotate else " (travado)"),
+					"body": "Vidro semi-espelhado: parte da luz atravessa reta e parte é refletida, criando dois raios. Inclinação: %d°." % angle}
+			if mirror.can_rotate:
+				return {"key": "m%d" % i, "title": "Espelho %d" % mirror.number,
+					"body": "Reflete a luz: o ângulo de incidência é igual ao de reflexão. Inclinação: %d°. Clique para selecionar; arraste a ponta, use Q/E ou a roda para girar 15°." % angle}
+			return {"key": "m%d" % i, "title": "Espelho travado",
+				"body": "Reflete a luz, mas não gira. Inclinação: %d°. Use os outros espelhos para levar a luz até ele." % angle}
+
+	for i in range(crystals.size()):
+		var crystal: Node2D = crystals[i]
+		if crystal.global_position.distance_to(point) <= crystal.get_light_radius() + 8.0:
+			var color_name: String = crystal.required_color
+			var state := "Agora: aceso." if lit_state[i] else "Agora: apagado."
+			if color_name == "any":
+				return {"key": "c%d" % i, "title": "Cristal", "body": "Acende com luz de qualquer cor. %s" % state}
+			var label := "%s %s" % [UI.COLOR_NAMES.get(color_name, color_name), COLOR_SYMBOLS.get(color_name, "")]
+			var light := "%s %s" % [COLOR_FEMININE.get(color_name, color_name), COLOR_SYMBOLS.get(color_name, "")]
+			return {"key": "c%d" % i, "title": "Cristal %s" % label, "body": "Só acende com luz %s. %s" % [light, state]}
+
+	for i in range(prisms.size()):
+		if prisms[i].global_position.distance_to(point) <= 36.0:
+			return {"key": "p%d" % i, "title": "Prisma",
+				"body": "Separa a luz branca em três: vermelho ▲ (30° para um lado), verde ● (reto) e azul ■ (30° para o outro). Luz colorida atravessa reto."}
+
+	for i in range(filters.size()):
+		var color_filter: Node2D = filters[i]
+		var local := color_filter.to_local(point)
+		if absf(local.x) <= 58.0 and absf(local.y) <= 16.0:
+			var color_name: String = color_filter.color_name
+			return {"key": "f%d" % i, "title": "Filtro %s %s" % [UI.COLOR_NAMES.get(color_name, color_name), COLOR_SYMBOLS.get(color_name, "")],
+				"body": "A luz branca sai %s ao atravessar. Luz da mesma cor passa; luz de outra cor é bloqueada." % COLOR_FEMININE.get(color_name, color_name)}
+
+	for i in range(obstacles.size()):
+		var obstacle: Node2D = obstacles[i]
+		var local := obstacle.to_local(point)
+		var half: Vector2 = obstacle.obstacle_size * 0.5
+		if absf(local.x) <= half.x and absf(local.y) <= half.y:
+			return {"key": "o%d" % i, "title": "Bloco absorvedor", "body": "Absorve qualquer raio de luz que o toca. Contorne-o com os espelhos."}
+
+	var emitter_local := emitter.to_local(point)
+	if emitter_local.x >= -46.0 and emitter_local.x <= 34.0 and absf(emitter_local.y) <= 26.0:
+		return {"key": "e", "title": "Emissor", "body": "Fonte da luz branca. A direção do raio não muda: quem muda o caminho são os espelhos."}
+	return {}
+
+
+# ---------------------------------------------------------------- "Por que funcionou?"
+
+func _build_explanation() -> String:
+	var lines: Array = []
+	var count := _victory_reflections.size()
+	if count > 0:
+		lines.append("Na sua solução a luz refletiu %d %s:" % [count, "vez" if count == 1 else "vezes"])
+		for i in range(mini(count, 4)):
+			var reflection: Dictionary = _victory_reflections[i]
+			var angle := int(round(float(reflection["angle"])))
+			lines.append("•  %s: incidência %d° = reflexão %d°, então o raio virou %d°." % [_mirror_name(reflection["mirror"]), angle, angle, 180 - 2 * angle])
+		if count > 4:
+			lines.append("•  ... e mais %d reflexões." % (count - 4))
+
+	var has_splitter := false
+	for mirror in mirrors:
+		has_splitter = has_splitter or mirror.is_splitter()
+	if has_splitter:
+		lines.append("O divisor criou dois caminhos: parte da luz seguiu reto e parte foi refletida.")
+	if not filters.is_empty():
+		lines.append("O filtro tingiu a luz branca, e só a cor certa acende cada cristal colorido.")
+	if not prisms.is_empty():
+		lines.append("O prisma separou a luz branca: vermelho 30° para um lado, verde reto e azul 30° para o outro.")
+	lines.append("Regra de ouro: o ângulo de incidência é sempre igual ao ângulo de reflexão.")
+	return "\n".join(lines)
+
+
+func _mirror_name(mirror: Node2D) -> String:
+	if mirror.is_splitter():
+		return "Divisor %d" % mirror.number if mirror.number > 0 else "Divisor"
+	if mirror.number > 0:
+		return "Espelho %d" % mirror.number
+	return "Espelho travado"

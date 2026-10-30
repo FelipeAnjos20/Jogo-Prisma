@@ -33,6 +33,26 @@ static func refletir(direcao: Vector2, vetor_superficie: Vector2) -> Vector2:
 	return direcao - normal * 2.0 * direcao.dot(normal)
 
 
+## Normal da superficie voltada para o lado de onde o raio chega.
+static func normal_voltada_para_o_raio(direcao: Vector2, vetor_superficie: Vector2) -> Vector2:
+	var normal := Vector2(-vetor_superficie.y, vetor_superficie.x).normalized()
+	return -normal if normal.dot(direcao) > 0.0 else normal
+
+
+## Angulo de incidencia (em graus, de 0 a 90) entre o raio que chega e a normal da superficie.
+## Pela lei da reflexao, o angulo de reflexao e igual a ele.
+static func angulo_incidencia(direcao: Vector2, vetor_superficie: Vector2) -> float:
+	var normal := normal_voltada_para_o_raio(direcao, vetor_superficie)
+	var cosseno := clampf((-direcao.normalized()).dot(normal), -1.0, 1.0)
+	return rad_to_deg(acos(cosseno))
+
+
+## Inclinacao de um espelho como se mede na matematica: a partir da horizontal, no sentido
+## anti-horario, de 0 a 180 graus. (No Godot o eixo y aponta para baixo, entao o sinal inverte.)
+static func inclinacao_espelho(rotacao_godot_graus: float) -> float:
+	return fposmod(-rotacao_godot_graus, MEIA_VOLTA)
+
+
 ## Distancia ao longo do raio ate o segmento [inicio, fim], ou INF se nao houver intersecao.
 static func intersecao_raio_segmento(origem: Vector2, direcao: Vector2, inicio: Vector2, fim: Vector2, distancia_minima := 0.5) -> float:
 	var segmento := fim - inicio

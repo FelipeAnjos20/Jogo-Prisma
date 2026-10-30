@@ -14,6 +14,8 @@ const MAX_SPARKS := 160
 var segments: Array = []
 var hits: Array = []
 var energized_prisms: Array = []
+# Reflexoes em espelhos/divisores: {position, incoming, outgoing, normal, angle, mirror (node), color}
+var reflections: Array = []
 
 var _pulse_offset := 0.0
 var _sparks: Array = []
@@ -66,6 +68,15 @@ func trace(emitter: Node2D, mirrors: Array, filters: Array, obstacles: Array, cr
 	energized_prisms.clear()
 	for index in result["energized"]:
 		energized_prisms.append(prisms[index])
+
+	# Os espelhos usam os donos 0..n-1, entao o dono aponta direto para o node.
+	reflections.clear()
+	for reflection in result["reflections"]:
+		var owner_index: int = reflection["owner"]
+		if owner_index >= 0 and owner_index < mirrors.size():
+			var entry: Dictionary = reflection.duplicate()
+			entry["mirror"] = mirrors[owner_index]
+			reflections.append(entry)
 	return result["lit"]
 
 

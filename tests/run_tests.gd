@@ -30,10 +30,14 @@ func _init() -> void:
 	_test_intersecao_raio_segmento()
 	_test_intersecao_raio_circulo()
 	_test_estrelas_por_rotacoes()
+	_test_normal_voltada_para_o_raio()
+	_test_angulo_de_incidencia()
+	_test_inclinacao_do_espelho()
 
 	# Regras de luz (feixe.gd)
 	_test_filtro_bloqueia_outra_cor()
 	_test_prisma_divide_luz_branca()
+	_test_feixe_registra_reflexao()
 
 	# Todas as fases: solucao existe, nao comecam resolvidas e a meta confere
 	_test_fases()
@@ -130,6 +134,30 @@ func _test_estrelas_por_rotacoes() -> void:
 	_assert_eq("1 estrela acima do dobro da meta", Geometria.estrelas_por_rotacoes(11, 5), 1)
 
 
+func _test_normal_voltada_para_o_raio() -> void:
+	# Superficie vertical, raio vindo da esquerda: a normal aponta de volta para a esquerda.
+	var normal := Geometria.normal_voltada_para_o_raio(Vector2.RIGHT, Vector2.DOWN)
+	_assert_proximo("normal aponta para o lado de onde o raio chega (x)", normal.x, -1.0)
+	_assert_proximo("normal aponta para o lado de onde o raio chega (y)", normal.y, 0.0)
+
+
+func _test_angulo_de_incidencia() -> void:
+	var superficie_45 := Vector2.RIGHT.rotated(deg_to_rad(45.0))
+	_assert_proximo("raio horizontal em espelho a 45 graus incide a 45 graus", Geometria.angulo_incidencia(Vector2.RIGHT, superficie_45), 45.0)
+	var superficie_vertical := Vector2.DOWN
+	_assert_proximo("raio perpendicular ao espelho incide a 0 grau", Geometria.angulo_incidencia(Vector2.RIGHT, superficie_vertical), 0.0)
+	var superficie_30 := Vector2.RIGHT.rotated(deg_to_rad(30.0))
+	_assert_proximo("raio horizontal em espelho a 30 graus incide a 60 graus", Geometria.angulo_incidencia(Vector2.RIGHT, superficie_30), 60.0)
+
+
+func _test_inclinacao_do_espelho() -> void:
+	# No Godot o eixo y aponta para baixo; na matematica o angulo cresce no sentido anti-horario.
+	_assert_proximo("rotacao 0 = inclinacao 0", Geometria.inclinacao_espelho(0.0), 0.0)
+	_assert_proximo("rotacao -45 (sobe para a direita) = inclinacao 45", Geometria.inclinacao_espelho(-45.0), 45.0)
+	_assert_proximo("rotacao 45 (desce para a direita) = inclinacao 135", Geometria.inclinacao_espelho(45.0), 135.0)
+	_assert_proximo("rotacao 270 = inclinacao 90", Geometria.inclinacao_espelho(270.0), 90.0)
+
+
 # ---------------------------------------------------------------- regras de luz
 
 func _test_filtro_bloqueia_outra_cor() -> void:
@@ -152,6 +180,22 @@ func _test_prisma_divide_luz_branca() -> void:
 	var resultado := Feixe.tracar(Vector2(100, 400), Vector2.RIGHT, [], cristais, prismas)
 	_assert_eq("prisma gera o raio verde reto", resultado["lit"][0], true)
 	_assert_eq("prisma fica energizado", resultado["energized"], [0])
+
+
+func _test_feixe_registra_reflexao() -> void:
+	# Fase 1 resolvida: o raio horizontal bate no espelho a 45 graus e desce.
+	var seg := Feixe.segmento(Vector2(640, 300), 45.0, 60.0)
+	var superficies := [{"a": seg[0], "b": seg[1], "tipo": "mirror", "dono": 0}]
+	var cristais := [{"centro": Vector2(640, 580), "raio": 28.0, "cor": "any"}]
+	var resultado := Feixe.tracar(Vector2(160, 300), Vector2.RIGHT, superficies, cristais, [])
+	var reflexoes: Array = resultado["reflections"]
+	_assert_eq("feixe registra uma reflexao", reflexoes.size(), 1)
+	_assert_proximo("lei da reflexao: angulo de incidencia de 45 graus", reflexoes[0]["angle"], 45.0)
+	var saida: Vector2 = reflexoes[0]["outgoing"]
+	var normal: Vector2 = reflexoes[0]["normal"]
+	var angulo_saida := rad_to_deg(acos(clampf(saida.dot(normal), -1.0, 1.0)))
+	_assert_proximo("lei da reflexao: angulo de reflexao igual ao de incidencia", angulo_saida, reflexoes[0]["angle"])
+	_assert_eq("reflexao aponta para o espelho certo", reflexoes[0]["owner"], 0)
 
 
 # ---------------------------------------------------------------- fases

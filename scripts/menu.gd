@@ -137,6 +137,16 @@ func _build_options_panel() -> void:
 	)
 	inner.add_child(fullscreen)
 
+	var angles := CheckButton.new()
+	angles.text = "Mostrar ângulos e explicações (G)"
+	angles.focus_mode = Control.FOCUS_ALL
+	angles.button_pressed = GameState.show_angles
+	angles.toggled.connect(func(on: bool) -> void:
+		GameState.set_show_angles(on)
+		Sfx.play("click")
+	)
+	inner.add_child(angles)
+
 	_reset_button = UI.make_button("Apagar progresso", 17)
 	_reset_button.pressed.connect(_on_reset_pressed)
 	inner.add_child(_reset_button)
@@ -263,7 +273,7 @@ func _build_footer() -> void:
 	_progress_label.position = Vector2(88, 648)
 	hud.add_child(_progress_label)
 
-	var version := UI.make_label("F11: tela cheia   ·   v3.0", 13, UI.TEXT_DIM, 500)
+	var version := UI.make_label("F11: tela cheia   ·   v3.1", 13, UI.TEXT_DIM, 500)
 	version.position = Vector2(1060, 690)
 	hud.add_child(version)
 

@@ -18,6 +18,8 @@ var autopause := true
 var music_volume := 0.7
 var sfx_volume := 0.8
 var music_enabled := true
+# Guia de angulos e explicacoes (parte educativa). Tecla G liga/desliga.
+var show_angles := true
 var fullscreen := false
 
 # true quando o jogador esta usando teclado/controle nos menus (mostra o destaque de foco).
@@ -209,6 +211,11 @@ func toggle_music() -> bool:
 	return music_enabled
 
 
+func set_show_angles(value: bool) -> void:
+	show_angles = value
+	save_data()
+
+
 func set_fullscreen(value: bool) -> void:
 	fullscreen = value
 	_apply_window_mode()
@@ -240,6 +247,7 @@ func save_data() -> void:
 	config.set_value("settings", "sfx_volume", sfx_volume)
 	config.set_value("settings", "music_enabled", music_enabled)
 	config.set_value("settings", "fullscreen", fullscreen)
+	config.set_value("settings", "show_angles", show_angles)
 	config.save(SAVE_PATH)
 
 
@@ -255,6 +263,7 @@ func load_data() -> void:
 	sfx_volume = float(config.get_value("settings", "sfx_volume", sfx_volume))
 	music_enabled = bool(config.get_value("settings", "music_enabled", music_enabled))
 	fullscreen = bool(config.get_value("settings", "fullscreen", fullscreen))
+	show_angles = bool(config.get_value("settings", "show_angles", show_angles))
 
 
 func _copy_into(target: Array, source, fallback: int) -> void:

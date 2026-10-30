@@ -30,12 +30,14 @@ const DONO_PAREDE := -1
 ## cristais: Array de {"centro": Vector2, "raio": float, "cor": String}
 ## prismas: Array de {"centro": Vector2, "raio": float}
 ## Retorna {"segments": [{a, b, color, distance}], "hits": [{position, color, strong}],
-##          "lit": Array[bool] por cristal, "energized": Array[int] indices dos prismas atingidos}
+##          "lit": Array[bool] por cristal, "energized": Array[int] indices dos prismas atingidos,
+##          "reflections": [{position, incoming, outgoing, normal, angle, owner, color}] (espelhos e divisores)}
 static func tracar(origem: Vector2, direcao: Vector2, superficies: Array, cristais: Array, prismas: Array, sala := SALA) -> Dictionary:
 	var segmentos: Array = []
 	var impactos: Array = []
 	var acesos: Array = []
 	var prismas_ativos: Array = []
+	var reflexoes: Array = []
 	for _cristal in cristais:
 		acesos.append(false)
 
@@ -137,8 +139,18 @@ static func tracar(origem: Vector2, direcao: Vector2, superficies: Array, crista
 				ignorar = superficie["dono"]
 				continue
 
-			var refletida := Geometria.refletir(d, superficie["b"] - superficie["a"])
+			var vetor_superficie: Vector2 = superficie["b"] - superficie["a"]
+			var refletida := Geometria.refletir(d, vetor_superficie)
 			impactos.append({"position": ponto, "color": cor, "strong": true})
+			reflexoes.append({
+				"position": ponto,
+				"incoming": d,
+				"outgoing": refletida,
+				"normal": Geometria.normal_voltada_para_o_raio(d, vetor_superficie),
+				"angle": Geometria.angulo_incidencia(d, vetor_superficie),
+				"owner": superficie["dono"],
+				"color": cor,
+			})
 			if tipo == "splitter":
 				fila.append({"origem": ponto + refletida * AFASTAMENTO, "direcao": refletida, "cor": cor, "ignorar": superficie["dono"], "distancia": percorrido})
 				o = ponto + d * AFASTAMENTO
@@ -147,7 +159,7 @@ static func tracar(origem: Vector2, direcao: Vector2, superficies: Array, crista
 				o = ponto + d * AFASTAMENTO
 			ignorar = superficie["dono"]
 
-	return {"segments": segmentos, "hits": impactos, "lit": acesos, "energized": prismas_ativos}
+	return {"segments": segmentos, "hits": impactos, "lit": acesos, "energized": prismas_ativos, "reflections": reflexoes}
 
 
 ## Cristal "any" aceita qualquer cor; os demais so a propria cor.
