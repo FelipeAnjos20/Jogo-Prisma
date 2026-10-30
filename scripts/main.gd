@@ -278,6 +278,8 @@ func _load_level(index: int) -> void:
 		lit_state.append(false)
 
 	_pop_in([emitter] + obstacles + filters + prisms + mirrors + crystals)
+	emitter.charge()
+	beam.play_intro()
 
 	if not rotatable.is_empty():
 		_select(rotatable[0], false)

@@ -10,6 +10,8 @@ const Feixe := preload("res://scripts/feixe.gd")
 const PULSE_SPEED := 360.0
 const PULSE_SPACING := 90.0
 const MAX_SPARKS := 160
+const INTRO_DELAY := 0.18
+const INTRO_DURATION := 0.6
 
 var segments: Array = []
 var hits: Array = []
@@ -20,6 +22,32 @@ var reflections: Array = []
 var _pulse_offset := 0.0
 var _sparks: Array = []
 var _spark_timer := 0.0
+var _intro_age := INTRO_DELAY + INTRO_DURATION
+var _visible_distance := INF
+
+
+func play_intro() -> void:
+	_intro_age = 0.0
+	_visible_distance = 0.0
+	_sparks.clear()
+	_spark_timer = 0.0
+	queue_redraw()
+
+
+func get_visible_distance() -> float:
+	return _visible_distance
+
+
+# Recorta apenas a apresentacao; os dados do calculo ficam intactos.
+static func visible_length(segment: Dictionary, distance_limit: float) -> float:
+	var start: Vector2 = segment["a"]
+	var end: Vector2 = segment["b"]
+	return clampf(distance_limit - float(segment["distance"]), 0.0, start.distance_to(end))
+
+
+func _reduced_effects() -> bool:
+	var state := get_tree().root.get_node_or_null("GameState")
+	return state != null and state.get("reduce_effects") == true
 
 
 func _ready() -> void:
@@ -29,8 +57,20 @@ func _ready() -> void:
 
 
 func _process(delta: float) -> void:
+	var reduced := _reduced_effects()
+	_intro_age += delta
+	_visible_distance = INF
+	if not reduced and _intro_age < INTRO_DELAY + INTRO_DURATION:
+		var path_length := 0.0
+		for segment in segments:
+			var start: Vector2 = segment["a"]
+			path_length = maxf(path_length, float(segment["distance"]) + start.distance_to(segment["b"]))
+		_visible_distance = path_length * clampf((_intro_age - INTRO_DELAY) / INTRO_DURATION, 0.0, 1.0)
 	_pulse_offset = fmod(_pulse_offset + PULSE_SPEED * delta, PULSE_SPACING)
-	_update_sparks(delta)
+	if reduced:
+		_sparks.clear()
+	else:
+		_update_sparks(delta)
 	queue_redraw()
 
 
@@ -108,6 +148,8 @@ func _update_sparks(delta: float) -> void:
 	if _spark_timer >= 0.03:
 		_spark_timer = 0.0
 		for hit in hits:
+			if not _hit_visible(hit):
+				continue
 			if _sparks.size() >= MAX_SPARKS:
 				break
 			var angle := randf() * TAU
@@ -129,14 +171,24 @@ func _update_sparks(delta: float) -> void:
 func _draw() -> void:
 	for segment in segments:
 		var start := to_local(segment["a"])
-		var end := to_local(segment["b"])
+		var full_end := to_local(segment["b"])
+		var length := visible_length(segment, _visible_distance)
+		if length <= 0.01:
+			continue
+		var end := start.move_toward(full_end, length)
 		var color := UI.light_color(segment["color"])
 		_draw_glow_line(start, end, color)
+		if length < start.distance_to(full_end):
+			draw_circle(end, 15.0, Color(color.r, color.g, color.b, 0.22))
+			draw_circle(end, 4.0, Color(1, 1, 1, 0.9))
 
-	for segment in segments:
-		_draw_segment_pulses(segment)
+	if not _reduced_effects():
+		for segment in segments:
+			_draw_segment_pulses(segment)
 
 	for hit in hits:
+		if not _hit_visible(hit):
+			continue
 		var point := to_local(hit["position"])
 		var color := UI.light_color(hit["color"])
 		var radius := 9.0 if hit["strong"] else 6.0
@@ -151,6 +203,18 @@ func _draw() -> void:
 		draw_line(spark["position"], spark["position"] - tail, Color(spark_color.r, spark_color.g, spark_color.b, fade), 2.0, true)
 
 
+func _hit_visible(hit: Dictionary) -> bool:
+	if _visible_distance == INF:
+		return true
+	for segment in segments:
+		var end: Vector2 = segment["b"]
+		if end.distance_squared_to(hit["position"]) < 0.25:
+			var start: Vector2 = segment["a"]
+			if float(segment["distance"]) + start.distance_to(end) <= _visible_distance:
+				return true
+	return false
+
+
 func _draw_glow_line(start: Vector2, end: Vector2, color: Color) -> void:
 	# Camadas somadas (blend aditivo) criam o brilho.
 	draw_line(start, end, Color(color.r, color.g, color.b, 0.07), 30.0, true)
@@ -163,7 +227,8 @@ func _draw_glow_line(start: Vector2, end: Vector2, color: Color) -> void:
 func _draw_segment_pulses(segment: Dictionary) -> void:
 	var start: Vector2 = segment["a"]
 	var end: Vector2 = segment["b"]
-	var length := start.distance_to(end)
+	var length := visible_length(segment, _visible_distance)
+	var full_length := start.distance_to(end)
 	if length < 1.0:
 		return
 
@@ -174,7 +239,7 @@ func _draw_segment_pulses(segment: Dictionary) -> void:
 
 	var color_name: String = segment["color"]
 	while along <= length:
-		var point := to_local(start.lerp(end, along / length))
+		var point := to_local(start.lerp(end, along / full_length))
 		draw_circle(point, 9.0, Color(color.r, color.g, color.b, 0.22))
 		if color_name == "white":
 			draw_circle(point, 4.0, Color(1, 1, 1, 0.8))
