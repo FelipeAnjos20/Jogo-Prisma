@@ -396,7 +396,8 @@ godot --headless --script res://tests/run_tests.gd
 
 - **CI** (`.github/workflows/ci.yml`): roda os testes a cada push ou pull request na `main`.
 - **CD** (`.github/workflows/cd.yml`): ao criar uma tag `vMAJOR.MINOR.PATCH`, exporta a build Windows
-  e publica em [Releases](https://github.com/FelipeAnjos20/Jogo-Prisma/releases).
+  (no Linux), grava o ícone e a versão no `Prisma.exe` com o [rcedit](https://github.com/electron/rcedit)
+  (num runner Windows) e publica em [Releases](https://github.com/FelipeAnjos20/Jogo-Prisma/releases).
 
 O fluxo de trabalho é *trunk-based development* com Conventional Commits (ver
 [ADR 004](docs/adr/004-trunk-based-development.md)).

@@ -5,6 +5,17 @@ Todas as mudancas notaveis deste projeto serao documentadas neste arquivo.
 O formato e baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/),
 e este projeto segue o [Versionamento Semantico](https://semver.org/lang/pt-BR/).
 
+## [3.3.2] - 2026-10-30
+
+### Corrigido
+
+- O `Prisma.exe` da release saia sem icone e sem informacoes de versao (o Godot nao grava esses
+  dados quando exporta no Linux). O CD agora grava icone e versao com o rcedit num runner Windows,
+  o que tambem costuma reduzir alarmes falsos de antivirus.
+- Tutorial `COMO_ABRIR.md`: o alarme falso do Windows Defender (`Wacatac.H!ml`) virou o passo 2 da
+  Opcao A; aviso da pasta dupla ao extrair o zip do projeto e do aviso de conversao no Godot 4.7.
+- Texto da opcao "Reduzir efeitos" encostava no botao.
+
 ## [3.3.1] - 2026-10-30
 
 ### Alterado

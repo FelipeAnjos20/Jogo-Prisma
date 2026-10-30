@@ -12,10 +12,11 @@ permissions:
 
 env:
   GODOT_VERSION: "4.6.3"
+  RCEDIT_VERSION: "v2.0.0"
 
 jobs:
-  release:
-    name: Build e publicacao da release
+  build:
+    name: Build Windows (exportado no Linux)
     runs-on: ubuntu-latest
     steps:
       - name: Checkout do repositorio
@@ -36,10 +37,51 @@ jobs:
           mkdir -p build/windows
           godot --headless --export-release "Windows Desktop" build/windows/Prisma.exe
 
-      - name: Compactar build
+      - name: Guardar a build para a proxima etapa
+        uses: actions/upload-artifact@v4
+        with:
+          name: prisma-windows
+          path: build/windows/
+          if-no-files-found: error
+
+  release:
+    name: Icone, versao e publicacao da release
+    needs: build
+    # No Linux o Godot nao grava icone e versao no .exe; no Windows o rcedit grava.
+    # Um .exe com essas informacoes costuma gerar menos alarmes falsos de antivirus.
+    runs-on: windows-latest
+    steps:
+      - name: Checkout do repositorio
+        uses: actions/checkout@v4
+
+      - name: Baixar a build
+        uses: actions/download-artifact@v4
+        with:
+          name: prisma-windows
+          path: build/windows
+
+      - name: Gravar icone e versao no Prisma.exe
+        shell: pwsh
         run: |
-          cd build/windows
-          zip -r "../../Prisma-windows-${{ github.ref_name }}.zip" .
+          $tag = "${{ github.ref_name }}"
+          $version = $tag.TrimStart("v") + ".0"
+          $rcedit = "$env:RUNNER_TEMP\rcedit-x64.exe"
+          Invoke-WebRequest -UseBasicParsing "https://github.com/electron/rcedit/releases/download/$env:RCEDIT_VERSION/rcedit-x64.exe" -OutFile $rcedit
+          & $rcedit "build/windows/Prisma.exe" `
+            --set-icon "icon.ico" `
+            --set-file-version $version `
+            --set-product-version $version `
+            --set-version-string "ProductName" "PRISMA" `
+            --set-version-string "FileDescription" "PRISMA - O lugar onde a luz quebrou" `
+            --set-version-string "CompanyName" "Equipe PRISMA - Catolica SC" `
+            --set-version-string "LegalCopyright" "Equipe PRISMA - PAC Extensionista III" `
+            --set-version-string "OriginalFilename" "Prisma.exe"
+          if ($LASTEXITCODE -ne 0) { throw "rcedit falhou ($LASTEXITCODE)" }
+          (Get-Item "build/windows/Prisma.exe").VersionInfo | Format-List FileVersion, ProductVersion, ProductName, FileDescription
+
+      - name: Compactar build
+        shell: pwsh
+        run: Compress-Archive -Path "build/windows/*" -DestinationPath "Prisma-windows-${{ github.ref_name }}.zip"
 
       - name: Publicar release no GitHub
         uses: softprops/action-gh-release@v2
