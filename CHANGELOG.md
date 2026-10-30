@@ -5,6 +5,35 @@ Todas as mudancas notaveis deste projeto serao documentadas neste arquivo.
 O formato e baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/),
 e este projeto segue o [Versionamento Semantico](https://semver.org/lang/pt-BR/).
 
+## [3.2.0] - 2026-10-30
+
+Jogo mais interativo com o jogador: a luz vira musica, o Echo vira personagem e os
+fragmentos contam uma historia.
+
+### Adicionado
+
+- A luz vira musica (`scripts/musica.gd`): cada cristal aceso toca a proxima nota de um
+  acorde, cada posicao do espelho tem um tom e cada fase termina com a sua melodia.
+- Cristal "quase la": o cristal apagado treme e brilha fraco quando o raio passa perto.
+- Espelho balanca ao girar e a vitoria solta faiscas por todo o caminho da luz.
+- Echo na barra superior (`scripts/echo_face.gd`): olha para o mouse, muda de expressao,
+  cochila quando o jogador fica parado e acorda quando ele volta.
+- Conversa com o Echo (clique nele ou `T`): dica, curiosidade sobre a luz, falar menos/mais.
+  Perguntas com botoes de resposta (teclas `1` a `4` tambem respondem).
+- Echo pergunta o nome do jogador na primeira partida e passa a usar o nome nas falas.
+- Na fase 2, Echo pergunta se o jogador quer pistas ("Sim, me ajuda!" / "Deixa comigo!").
+  No modo "Deixa comigo" so comemora e avisa eventos. Opcao tambem em *Opcoes*.
+- Historia dos fragmentos (`scripts/historia.gd`): 10 memorias do Farol de Aurora, mostradas
+  na vitoria e na tela "Memorias do Prisma"; final com agradecimento do Echo pelo nome.
+  Aceita ilustracoes opcionais em `assets/story/fragmento_XX.png`.
+- Testes: 103 verificacoes (musica, historia, nome do jogador e modo "Deixa comigo").
+
+### Alterado
+
+- Opcoes em dois cartoes, com o novo cartao "Voce e o Echo".
+- `COMO_ABRIR.md`: nome do arquivo da versao mais recente, aviso sobre antivirus e sobre o
+  botao "Entrada" do Godot 4.4+.
+
 ## [3.1.0] - 2026-10-30
 
 Interatividade com o jogador e parte educativa.

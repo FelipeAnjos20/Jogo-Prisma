@@ -18,12 +18,13 @@ Escolha uma das duas opções:
 
 > **https://github.com/FelipeAnjos20/Jogo-Prisma/releases/latest**
 
-Em **Assets**, clique em **`Prisma-windows-v3.0.0.zip`** (41 MB). Não é preciso ter conta no GitHub.
+Em **Assets**, clique no arquivo **`Prisma-windows-v…zip`** da versão mais recente (cerca de 41 MB).
+Não clique em "Source code", que é só o código. Não é preciso ter conta no GitHub.
 
 ![Página de download no GitHub](docs/img/github_release.png)
 
 **2. Extraia o arquivo.** Na pasta **Downloads**, clique com o **botão direito** em
-`Prisma-windows-v3.0.0.zip` → **Extrair Tudo...** → **Extrair**.
+`Prisma-windows-v…zip` → **Extrair Tudo...** → **Extrair**.
 
 > Não abra o jogo direto de dentro do zip, porque ele não funciona assim. Extraia primeiro.
 
@@ -37,6 +38,13 @@ escondendo as extensões, o arquivo aparece como **Prisma**, do tipo "Aplicativo
 comum em projetos acadêmicos e independentes.
 
 **5. Jogue!** No menu, clique em **Jogar**. Veja os [primeiros passos no jogo](#primeiros-passos-no-jogo).
+
+> **O navegador ou o antivírus disse "Vírus detectado" e o download falhou?** Isso é um alarme falso
+> comum em jogos feitos com Godot que não têm assinatura digital paga. Duas saídas:
+> 1. Use a **[Opção B](#opção-b--abrir-o-projeto-no-godot)**, que roda o jogo pelo Godot sem baixar nenhum `.exe`.
+> 2. Ou, no Windows, abra **Segurança do Windows → Proteção contra vírus e ameaças → Histórico de
+>    proteção**, clique no item do Prisma, confira o nome (normalmente algo genérico, como `Wacatac` ou
+>    terminado em `!ml`), escolha **Permitir no dispositivo** e baixe de novo.
 
 ---
 
@@ -73,13 +81,20 @@ haver o arquivo **`project.godot`**.
 **5. Rode o jogo.** Aperte **F5**, ou clique no botão **▶** no canto superior direito do editor.
 O jogo abre no menu principal.
 
+> **O jogo abriu dentro do editor e o clique não funciona?** Nas versões mais novas do Godot (4.4 em
+> diante), o jogo roda dentro da aba **Jogo** do editor. Clique no botão **Entrada** (canto esquerdo da
+> barra acima do jogo) para o mouse e o teclado irem para o jogo. Para abrir numa janela separada,
+> clique nos **⋮** dessa barra e desmarque a opção de incorporar o jogo.
+>
+> O projeto foi feito no Godot 4.6, mas também abre em versões 4.x mais novas (testado no 4.7).
+
 ---
 
 ## Primeiros passos no jogo
 
 1. No menu, clique em **Jogar**.
-2. A **fase 1 tem um tutorial**: uma seta mostra qual espelho girar, e o assistente **Echo** explica o
-   que fazer.
+2. Na primeira vez, o assistente **Echo** pergunta seu nome. A **fase 1 tem um tutorial**: uma seta
+   mostra qual espelho girar, e o Echo explica o que fazer.
 3. **Objetivo:** levar o raio de luz do emissor até **todos os cristais** da sala ao mesmo tempo.
    Quando todos acendem, a fase está concluída e a próxima é liberada.
 4. **Não existe derrota.** Dá para tentar quantas vezes quiser. Quanto menos giros, mais estrelas (até 3 por fase).
@@ -99,6 +114,7 @@ O jogo abre no menu principal.
 | Ir para a próxima fase depois de vencer | `N` ou `Enter` |
 | Tela cheia | `F11` |
 | Mostrar/esconder os ângulos (incidência e reflexão) | `G` |
+| Conversar com o Echo (dica, curiosidade, falar menos) | Clique no Echo da barra de cima ou `T` |
 
 > **Dica:** pare o mouse sobre qualquer peça para saber o que ela faz. O assistente **Echo** também
 > comenta o que você faz: avisa quando o raio passou perto, quando a cor está errada e oferece ajuda.

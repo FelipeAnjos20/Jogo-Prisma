@@ -13,6 +13,7 @@ const AngleGuideScript := preload("res://scripts/angle_guide.gd")
 const EchoBrain := preload("res://scripts/echo_brain.gd")
 const Geometria = preload("res://scripts/geometria.gd")
 const UI := preload("res://scripts/ui_kit.gd")
+const Musica := preload("res://scripts/musica.gd")
 
 const Feixe := preload("res://scripts/feixe.gd")
 
@@ -20,6 +21,8 @@ const ROOM_RECT := Feixe.SALA
 const INTRO_TIME := 0.7
 const IDLE_HINT_TIME := 45.0
 const TOOLTIP_DELAY := 0.35
+# Sem nenhuma acao do jogador por este tempo, o Echo da barra superior cochila.
+const SLEEP_TIME := 30.0
 # Distancia (da borda do cristal) para o Echo dizer "Quase!" e variacoes para o "quente ou frio".
 const NEAR_MISS_DISTANCE := 100.0
 const WARMER_DELTA := 60.0
@@ -41,7 +44,7 @@ const TOAST_ANCHORS := [
 ]
 
 const INTRO_MESSAGES := [
-	"Olá, eu sou Echo! O Prisma de Luz se partiu e cada sala guarda um fragmento. Gire o espelho para levar a luz até o cristal.",
+	"Olá, {nome}! Eu sou Echo. O Prisma de Luz se partiu e cada sala guarda um fragmento. Gire o espelho para levar a luz até o cristal.",
 	"Agora são dois espelhos. Troque entre eles com 1, 2, Tab ou clicando. Z desfaz o último giro.",
 	"Cuidado: blocos vermelhos absorvem a luz. Você vai precisar dar a volta.",
 	"Espelhos com cadeado não giram, mas continuam refletindo. Use-os a seu favor.",
@@ -103,6 +106,8 @@ var _wrong_color_warned := {}
 var _last_closest := INF
 var _last_warm_cold := -100.0
 var _last_near_said := -1
+var _last_input := 0.0
+var _wake_said := false
 
 # Guia de angulos e caixa de informacao
 var _angle_guide: Node2D = null
@@ -130,7 +135,10 @@ func _ready() -> void:
 	hud.level_select_requested.connect(func() -> void: Transition.go_to("res://scenes/level_select.tscn"))
 	hud.menu_requested.connect(func() -> void: Transition.go_to("res://scenes/menu.tscn"))
 	hud.music_toggled.connect(_toggle_music)
+	hud.echo_clicked.connect(_open_echo_menu)
+	hud.choice_made.connect(_on_choice)
 	hud.set_music_state(GameState.music_enabled)
+	_echo.player_name = GameState.player_name
 
 	Sfx.play_music("res://assets/audio/gameplay_music.mp3", -16.0)
 	_angle_guide = AngleGuideScript.new()
@@ -183,7 +191,11 @@ func _load_level(index: int) -> void:
 	_last_near_said = -1
 	_hover_key = ""
 	_hover_time = 0.0
+	_last_input = _now()
+	_wake_said = false
 	get_tree().paused = false
+	hud.hide_choice()
+	hud.set_buddy_sleepy(false)
 	hud.hide_tooltip()
 	hud.show_pause(false)
 	hud.hide_victory()
@@ -260,8 +272,18 @@ func _load_level(index: int) -> void:
 
 	var token := _load_token
 	await get_tree().create_timer(1.6).timeout
-	if token == _load_token and not completed and index < INTRO_MESSAGES.size():
-		_say(INTRO_MESSAGES[index], 7.0, "neutral", PRIORITY_EVENT)
+	if token != _load_token or completed:
+		return
+	# Na fase 2 (so na primeira vez) o Echo pergunta como o jogador prefere ser ajudado.
+	if index == 1 and GameState.echo_help == "":
+		hud.ask("help", EchoBrain.personalizar("Agora que você pegou o jeito, {nome}: quer que eu dê pistas quando você travar?", GameState.player_name), ["Sim, me ajuda!", "Deixa comigo!"])
+		return
+	_say_intro()
+
+
+func _say_intro() -> void:
+	if level_index < INTRO_MESSAGES.size():
+		_say(EchoBrain.personalizar(INTRO_MESSAGES[level_index], GameState.player_name), 7.0, "neutral", PRIORITY_EVENT)
 
 
 func _pop_in(nodes: Array) -> void:
@@ -320,8 +342,11 @@ func _process(delta: float) -> void:
 				changed = true
 				turned_on = turned_on or on
 				turned_off = turned_off or not on
-				if not completed:
-					Sfx.play("crystal_on" if on else "crystal_off", 1.0 + 0.1 * i)
+				if not completed and not on:
+					Sfx.play("crystal_off", 1.0 + 0.1 * i)
+		if turned_on and not completed:
+			# A luz vira musica: cada cristal aceso toca a proxima nota do acorde.
+			Sfx.play_tone(Musica.nota_do_cristal(_lit_count() - 1))
 		if changed:
 			_update_stats()
 		if not completed and _lit_count() == crystals.size():
@@ -332,7 +357,11 @@ func _process(delta: float) -> void:
 
 	if not completed and not _hint_used and not _idle_hint_given and _level_time > IDLE_HINT_TIME:
 		_idle_hint_given = true
-		_say(_echo.say("idle"), 5.0, "thinking", PRIORITY_REACTION)
+		if _allowed("idle"):
+			_say(_echo.say("idle"), 5.0, "thinking", PRIORITY_REACTION)
+
+	_update_near_crystals()
+	hud.set_buddy_sleepy(not completed and not get_tree().paused and _now() - _last_input > SLEEP_TIME)
 
 	var guide_target: Node2D = selected if selected != null else hovered
 	_angle_guide.update_guide(null if completed else guide_target, beam.reflections, GameState.show_angles)
@@ -366,6 +395,7 @@ func _update_stats() -> void:
 func _unhandled_input(event: InputEvent) -> void:
 	if Transition.is_busy():
 		return
+	_register_activity(event)
 
 	if event is InputEventMouseMotion:
 		if _drag_mirror != null:
@@ -403,6 +433,12 @@ func _unhandled_input(event: InputEvent) -> void:
 	var key: int = event.keycode
 	var rotate_keys := [KEY_Q, KEY_E, KEY_A, KEY_D, KEY_LEFT, KEY_RIGHT]
 
+	# Com uma pergunta do Echo aberta, as teclas 1 a 4 escolhem a resposta.
+	if hud.is_choice_open() and not event.echo and key >= KEY_1 and key < KEY_1 + hud.choice_count():
+		hud.choose(key - KEY_1)
+		get_viewport().set_input_as_handled()
+		return
+
 	# Segurar Q/E gira continuamente; as outras teclas ignoram repeticao.
 	if event.echo and not rotate_keys.has(key):
 		return
@@ -418,6 +454,9 @@ func _unhandled_input(event: InputEvent) -> void:
 			_show_hint()
 		KEY_G:
 			_toggle_angles()
+		KEY_T:
+			if not event.echo:
+				_open_echo_menu()
 		KEY_N, KEY_ENTER, KEY_KP_ENTER, KEY_SPACE:
 			if completed:
 				_advance()
@@ -616,7 +655,9 @@ func _on_mirror_rotated(mirror: Node2D, previous_degrees: float) -> void:
 	history.append([mirror, previous_degrees])
 	rotation_count += 1
 	_rotations_since_progress += 1
-	Sfx.play("rotate", randf_range(0.92, 1.1))
+	_last_input = _now()
+	# O espelho "canta": cada posicao tem um tom.
+	Sfx.play("rotate", Musica.pitch_do_angulo(mirror.target_degrees))
 	_update_stats()
 
 
@@ -687,16 +728,21 @@ func _complete_level() -> void:
 		mirror.has_ghost = false
 	_victory_reflections = explanation_reflections
 	hud.hide_tooltip()
+	hud.hide_choice()
 	_shake = 1.0
 	hud.flash(0.5)
 	hud.hide_toast()
-	Sfx.play("win")
+	beam.celebrate()
+	# Cada fase termina com a sua melodia (ver scripts/musica.gd).
+	get_tree().create_timer(0.25).timeout.connect(Sfx.play_melody.bind("win_%d" % level_index, Musica.melodia_da_fase(level_index)))
 
 	await get_tree().create_timer(1.0).timeout
 	if token != _load_token:
 		return
 	var comment: String = _echo.victory_comment(int(result["stars"]), rotation_count, int(level["par"]), _hint_used, bool(result["record"]), _level_time)
-	hud.show_victory(result, rotation_count, int(level["par"]), is_last, _level_time, comment, _build_explanation())
+	# Na primeira vez que a fase e concluida, o fragmento devolve uma memoria da historia.
+	var story_index := level_index if bool(result.get("first_clear", false)) else -1
+	hud.show_victory(result, rotation_count, int(level["par"]), is_last, _level_time, comment, _build_explanation(), story_index)
 
 
 func _advance() -> void:
@@ -778,12 +824,12 @@ func _react_to_configuration() -> void:
 		return
 
 	_config_visits[signature] = int(_config_visits.get(signature, 0)) + 1
-	if _config_visits[signature] >= 3 and not _revisit_tip_given:
+	if _config_visits[signature] >= 3 and not _revisit_tip_given and _allowed("revisit"):
 		_revisit_tip_given = true
 		_say(_echo.say("revisit"), 4.5, "thinking", PRIORITY_REACTION)
 		return
 
-	if not _struggle_tip_given and not _hint_used and _rotations_since_progress >= maxi(8, int(level["par"]) * 2):
+	if not _struggle_tip_given and not _hint_used and _rotations_since_progress >= maxi(8, int(level["par"]) * 2) and _allowed("struggle"):
 		_struggle_tip_given = true
 		_say(_echo.say("struggle"), 5.0, "thinking", PRIORITY_REACTION)
 		return
@@ -822,7 +868,7 @@ func _react_to_beam() -> void:
 		overall_closest = minf(overall_closest, edge_distance)
 		# So comenta de novo se a distancia mudou (girar outro espelho nao repete o mesmo "Quase!").
 		var rounded := int(round(edge_distance))
-		if near_message == "" and edge_distance > 0.0 and edge_distance < NEAR_MISS_DISTANCE and rounded != _last_near_said:
+		if near_message == "" and edge_distance > 0.0 and edge_distance < NEAR_MISS_DISTANCE and rounded != _last_near_said and _allowed("near_miss"):
 			near_message = _echo.say("near_miss", [rounded])
 			near_distance = rounded
 
@@ -835,7 +881,7 @@ func _react_to_beam() -> void:
 			_last_warm_cold = _now()
 			_last_near_said = near_distance
 		return
-	if previous == INF or overall_closest == INF:
+	if previous == INF or overall_closest == INF or not _allowed("warmer"):
 		return
 	if overall_closest < previous - WARMER_DELTA and overall_closest < 250.0:
 		if _say(_echo.say("warmer"), 3.5, "happy", PRIORITY_REACTION):
@@ -843,6 +889,80 @@ func _react_to_beam() -> void:
 	elif overall_closest > previous + COLDER_DELTA and previous < 150.0:
 		if _say(_echo.say("colder"), 3.5, "thinking", PRIORITY_REACTION):
 			_last_warm_cold = _now()
+
+
+func _allowed(key: String) -> bool:
+	return EchoBrain.fala_permitida(key, GameState.echo_help)
+
+
+# Distancia do raio ate a borda do cristal (0 quando o raio encosta nele).
+func _beam_distance(crystal: Node2D) -> float:
+	var center := crystal.global_position
+	var closest := INF
+	for segment in beam.segments:
+		closest = minf(closest, center.distance_to(Geometry2D.get_closest_point_to_segment(center, segment["a"], segment["b"])))
+	return maxf(0.0, closest - crystal.get_light_radius())
+
+
+# "Quase la": cristais apagados tremem e brilham fraco quando o raio passa perto.
+func _update_near_crystals() -> void:
+	for i in range(crystals.size()):
+		var crystal: Node2D = crystals[i]
+		if completed or lit_state[i]:
+			crystal.near = 0.0
+			continue
+		crystal.near = clampf(1.0 - _beam_distance(crystal) / NEAR_MISS_DISTANCE, 0.0, 1.0)
+
+
+func _register_activity(event: InputEvent) -> void:
+	var active := event is InputEventKey or event is InputEventJoypadButton or event is InputEventMouseButton
+	if event is InputEventMouseMotion:
+		active = event.relative.length() > 2.0
+	if not active:
+		return
+	var was_sleeping := _now() - _last_input > SLEEP_TIME
+	_last_input = _now()
+	if was_sleeping and not completed and not _wake_said:
+		_wake_said = true
+		_say(_echo.say("wake"), 3.0, "surprised", PRIORITY_REACTION)
+
+
+# ---------------------------------------------------------------- conversa com o Echo
+
+func _open_echo_menu() -> void:
+	if completed or get_tree().paused or Transition.is_busy():
+		return
+	if hud.is_choice_open():
+		if hud.choice_tag() == "echo":
+			hud.hide_choice()
+		return
+	Sfx.play("talk", 1.2)
+	var quiet := GameState.echo_help == "sozinho"
+	hud.ask("echo", _echo.say("pet"), ["Uma dica", "Uma curiosidade", "Pode me ajudar" if quiet else "Fale menos", "Nada, valeu!"])
+
+
+func _on_choice(tag: String, index: int) -> void:
+	Sfx.play("click")
+	match tag:
+		"help":
+			GameState.set_echo_help("ajuda" if index == 0 else "sozinho")
+			_say(_echo.say("help_yes" if index == 0 else "help_no"), 3.0, "happy", PRIORITY_EVENT)
+			var token := _load_token
+			await get_tree().create_timer(3.4).timeout
+			if token == _load_token and not completed:
+				_say_intro()
+		"echo":
+			match index:
+				0:
+					_show_hint()
+				1:
+					_say(_echo.say("curiosity"), 7.0, "happy", PRIORITY_HINT, "CURIOSIDADE")
+				2:
+					var quiet := GameState.echo_help == "sozinho"
+					GameState.set_echo_help("ajuda" if quiet else "sozinho")
+					_say(_echo.say("help_yes" if quiet else "help_no"), 3.5, "happy", PRIORITY_HINT)
+				_:
+					_say(_echo.say("bye"), 2.5, "happy", PRIORITY_HINT)
 
 
 func _configuration_signature() -> String:

@@ -1,8 +1,12 @@
 extends Node2D
 
-# Menu principal: jogar/continuar, selecao de fases, como jogar, opcoes e sair.
+# Menu principal: jogar/continuar, selecao de fases, memorias, como jogar, opcoes e sair.
+# Na primeira partida o Echo pergunta o nome do jogador.
 
 const UI := preload("res://scripts/ui_kit.gd")
+const EchoFace := preload("res://scripts/echo_face.gd")
+const Historia := preload("res://scripts/historia.gd")
+const EchoBrain := preload("res://scripts/echo_brain.gd")
 
 # Edite aqui os nomes da equipe para aparecerem na tela de creditos.
 const TEAM := ["Vinicius Mesquita", "Felipe dos Anjos", "Eduardo Macedo", "Felipe Schwabe"]
@@ -16,6 +20,11 @@ var _main_panel: Control
 var _options_panel: Control
 var _howto_panel: Control
 var _credits_panel: Control
+var _name_panel: Control
+var _memories_panel: Control
+var _memories_list: VBoxContainer
+var _name_input: LineEdit
+var _options_name: LineEdit
 var _panels: Array = []
 var _reset_button: Button
 var _reset_armed := false
@@ -33,6 +42,8 @@ func _ready() -> void:
 	_build_options_panel()
 	_build_howto_panel()
 	_build_credits_panel()
+	_build_name_panel()
+	_build_memories_panel()
 	_build_footer()
 	_refresh_progress()
 	_show_panel(_main_panel)
@@ -89,6 +100,7 @@ func _build_main_panel() -> void:
 
 	var entries := [
 		["Seleção de fases", func() -> void: Transition.go_to("res://scenes/level_select.tscn")],
+		["Memórias do Prisma", func() -> void: _show_memories()],
 		["Como jogar", func() -> void: _show_panel(_howto_panel)],
 		["Opções", func() -> void: _show_panel(_options_panel)],
 		["Créditos", func() -> void: _show_panel(_credits_panel)],
@@ -101,11 +113,16 @@ func _build_main_panel() -> void:
 
 
 func _build_options_panel() -> void:
-	var column := _new_column(380)
+	var column := _new_column(800)
 	_options_panel = column
 
+	var cards := HBoxContainer.new()
+	cards.add_theme_constant_override("separation", 14)
+	column.add_child(cards)
 	var card := UI.make_panel()
-	column.add_child(card)
+	card.custom_minimum_size.x = 380
+	card.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	cards.add_child(card)
 	var inner := VBoxContainer.new()
 	inner.add_theme_constant_override("separation", 12)
 	card.add_child(inner)
@@ -147,14 +164,154 @@ func _build_options_panel() -> void:
 	)
 	inner.add_child(angles)
 
+	# Segundo cartao: o jogador e o Echo.
+	var echo_card := UI.make_panel()
+	echo_card.custom_minimum_size.x = 380
+	echo_card.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	cards.add_child(echo_card)
+	var echo_inner := VBoxContainer.new()
+	echo_inner.add_theme_constant_override("separation", 12)
+	echo_card.add_child(echo_inner)
+	echo_inner.add_child(UI.make_label("Você e o Echo", 28, Color(1.0, 0.96, 0.84), 800))
+
+	echo_inner.add_child(UI.make_label("Seu nome", 16, UI.TEXT_DIM, 600))
+	_options_name = _make_name_input()
+	_options_name.text = GameState.player_name
+	_options_name.text_changed.connect(func(text: String) -> void: GameState.set_player_name(text))
+	echo_inner.add_child(_options_name)
+
+	var helper := CheckButton.new()
+	helper.text = "Echo dá pistas quando eu travar"
+	helper.focus_mode = Control.FOCUS_ALL
+	helper.button_pressed = GameState.echo_help != "sozinho"
+	helper.toggled.connect(func(on: bool) -> void:
+		GameState.set_echo_help("ajuda" if on else "sozinho")
+		Sfx.play("click")
+	)
+	echo_inner.add_child(helper)
+	var helper_tip := UI.make_label("Desligado, o Echo só comemora e avisa o que acontece. Durante a fase, clique nele (ou T) para conversar.", 14, UI.TEXT_DIM, 500)
+	helper_tip.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	helper_tip.custom_minimum_size.x = 340
+	echo_inner.add_child(helper_tip)
+
 	_reset_button = UI.make_button("Apagar progresso", 17)
 	_reset_button.pressed.connect(_on_reset_pressed)
 	inner.add_child(_reset_button)
 
 	var back := UI.make_button("Voltar", 20)
+	back.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
+	back.custom_minimum_size.x = 200
 	back.pressed.connect(func() -> void: _show_panel(_main_panel))
 	back.add_to_group("default_focus")
 	column.add_child(back)
+
+
+func _make_name_input() -> LineEdit:
+	var input := LineEdit.new()
+	input.max_length = EchoBrain.NOME_MAX
+	input.placeholder_text = "Digite seu nome"
+	input.add_theme_font_override("font", UI.font(600))
+	input.add_theme_font_size_override("font_size", 20)
+	input.custom_minimum_size = Vector2(320, 46)
+	return input
+
+
+# Primeira partida: o Echo se apresenta e pergunta o nome do jogador.
+func _build_name_panel() -> void:
+	var column := _new_column(520)
+	_name_panel = column
+
+	var card := UI.make_panel(UI.PANEL_BG, Color(1.0, 0.86, 0.36, 0.6))
+	column.add_child(card)
+	var inner := VBoxContainer.new()
+	inner.add_theme_constant_override("separation", 14)
+	card.add_child(inner)
+
+	var row := HBoxContainer.new()
+	row.add_theme_constant_override("separation", 14)
+	inner.add_child(row)
+	var face := EchoFace.new(22.0)
+	face.mood = "happy"
+	row.add_child(face)
+	var hello := UI.make_label("Oi! Eu sou Echo, o que sobrou da luz do Prisma. Vou te acompanhar nas salas. Como posso te chamar?", 18, UI.TEXT, 600)
+	hello.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	hello.custom_minimum_size.x = 390
+	row.add_child(hello)
+
+	_name_input = _make_name_input()
+	_name_input.add_to_group("default_focus")
+	_name_input.text_submitted.connect(func(_text: String) -> void: _confirm_name())
+	inner.add_child(_name_input)
+
+	var buttons := HBoxContainer.new()
+	buttons.add_theme_constant_override("separation", 10)
+	inner.add_child(buttons)
+	var start := UI.make_button("Começar  ›", 20, 200)
+	start.pressed.connect(_confirm_name)
+	var skip := UI.make_button("Prefiro não dizer", 17)
+	skip.pressed.connect(func() -> void:
+		GameState.set_player_name("")
+		_start_game()
+	)
+	buttons.add_child(start)
+	buttons.add_child(skip)
+
+
+func _confirm_name() -> void:
+	GameState.set_player_name(_name_input.text)
+	if _options_name != null:
+		_options_name.text = GameState.player_name
+	_start_game()
+
+
+# Memorias: a historia que cada fragmento recuperado conta.
+func _build_memories_panel() -> void:
+	var column := _new_column(780)
+	_memories_panel = column
+
+	var card := UI.make_panel(UI.PANEL_BG, Color(0.78, 0.66, 1.0, 0.5))
+	column.add_child(card)
+	var inner := VBoxContainer.new()
+	inner.add_theme_constant_override("separation", 8)
+	card.add_child(inner)
+	inner.add_child(UI.make_label("Memórias do Prisma", 28, Color(1.0, 0.96, 0.84), 800))
+
+	var scroll := ScrollContainer.new()
+	scroll.custom_minimum_size = Vector2(744, 300)
+	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	inner.add_child(scroll)
+	_memories_list = VBoxContainer.new()
+	_memories_list.add_theme_constant_override("separation", 10)
+	_memories_list.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	scroll.add_child(_memories_list)
+
+	var back := UI.make_button("Voltar", 20)
+	back.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
+	back.custom_minimum_size.x = 200
+	back.pressed.connect(func() -> void: _show_panel(_main_panel))
+	back.add_to_group("default_focus")
+	column.add_child(back)
+
+
+func _show_memories() -> void:
+	for child in _memories_list.get_children():
+		_memories_list.remove_child(child)
+		child.queue_free()
+	for index in range(Historia.total()):
+		var fragment := Historia.fragmento(index)
+		var unlocked: bool = index < GameState.level_count() and GameState.stars[index] > 0
+		var title := "%d.  %s" % [index + 1, fragment["titulo"] if unlocked else "Memória bloqueada"]
+		_memories_list.add_child(UI.make_label(title, 17, Color(0.85, 0.75, 1.0) if unlocked else UI.TEXT_DIM, 800))
+		var text := UI.make_label(fragment["texto"] if unlocked else "Conclua a fase %d para recuperar este fragmento." % (index + 1), 15, UI.TEXT if unlocked else UI.TEXT_DIM, 500)
+		text.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		text.custom_minimum_size.x = 720
+		_memories_list.add_child(text)
+	if GameState.completed_levels() >= Historia.total():
+		var ending := UI.make_label(EchoBrain.personalizar(Historia.EPILOGO, GameState.player_name), 16, UI.ACCENT, 700)
+		ending.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		ending.custom_minimum_size.x = 720
+		_memories_list.add_child(ending)
+	_show_panel(_memories_panel)
 
 
 func _slider_row(title: String, value: float, value_label: Label, on_change: Callable) -> HBoxContainer:
@@ -270,10 +427,10 @@ func _build_credits_panel() -> void:
 
 func _build_footer() -> void:
 	_progress_label = UI.make_label("", 17, UI.ACCENT, 700)
-	_progress_label.position = Vector2(88, 648)
+	_progress_label.position = Vector2(88, 672)
 	hud.add_child(_progress_label)
 
-	var version := UI.make_label("F11: tela cheia   ·   v3.1", 13, UI.TEXT_DIM, 500)
+	var version := UI.make_label("F11: tela cheia   ·   v3.2", 13, UI.TEXT_DIM, 500)
 	version.position = Vector2(1060, 690)
 	hud.add_child(version)
 
@@ -303,6 +460,14 @@ func _next_level() -> int:
 
 
 func _on_play() -> void:
+	if not GameState.name_asked:
+		_show_panel(_name_panel)
+		_name_input.grab_focus.call_deferred()
+		return
+	_start_game()
+
+
+func _start_game() -> void:
 	GameState.current_level = _next_level()
 	Transition.go_to("res://scenes/main.tscn")
 

@@ -11,8 +11,13 @@ signal next_requested
 signal level_select_requested
 signal menu_requested
 signal music_toggled
+signal echo_clicked
+# tag identifica a pergunta; index e a opcao escolhida.
+signal choice_made(tag: String, index: int)
 
 const UI := preload("res://scripts/ui_kit.gd")
+const EchoFace := preload("res://scripts/echo_face.gd")
+const Historia := preload("res://scripts/historia.gd")
 
 var _level_title: Label
 var _objective: Label
@@ -27,7 +32,7 @@ var _toast_label: Label
 var _toast_title: Label
 var _toast_tween: Tween
 var _toast_anchor := Vector2(320, 96)
-var _toast_icon: EchoIcon
+var _toast_icon: EchoFace
 var _typing := false
 var _typed_chars := 0
 
@@ -49,9 +54,24 @@ var _victory_info: Label
 var _victory_record: Label
 var _next_button: Button
 var _victory_echo: Label
-var _victory_echo_icon: EchoIcon
+var _victory_echo_icon: EchoFace
 var _why_button: Button
 var _why_label: Label
+var _story_box: PanelContainer
+var _story_title: Label
+var _story_text: Label
+var _story_image: TextureRect
+
+# Echo da barra superior: sempre visivel, olha para o mouse e abre a conversa ao ser clicado.
+var _buddy: EchoFace
+var _buddy_mood_until := 0.0
+var _buddy_sleepy := false
+
+# Pergunta do Echo com botoes de resposta.
+var _choice_holder: Control
+var _choice_label: Label
+var _choice_buttons: HBoxContainer
+var _choice_tag := ""
 
 var _pause_root: Control
 var _resume_button: Button
@@ -59,7 +79,7 @@ var _resume_button: Button
 var _help_label: Label
 var _help_pad_mode := false
 
-const HELP_MOUSE := "Clique: selecionar   ·   Arrastar, Q/E ou roda: girar   ·   1-9 / Tab: trocar   ·   Z: desfazer   ·   H: dica   ·   G: ângulos   ·   Passe o mouse nas peças   ·   M: música"
+const HELP_MOUSE := "Clique: selecionar   ·   Arrastar, Q/E ou roda: girar   ·   1-9 / Tab: trocar   ·   Z: desfazer   ·   H: dica   ·   G: ângulos   ·   T: falar com o Echo   ·   M: música"
 const HELP_PAD := "Controle:  ◀ ▶ girar   ·   LB / RB trocar espelho   ·   A girar   ·   B desfazer   ·   Y dica   ·   X reiniciar   ·   Start pausa"
 
 
@@ -68,6 +88,7 @@ func _ready() -> void:
 	_build_top_bar()
 	_build_bottom_help()
 	_build_toast()
+	_build_choice()
 	_build_tooltip()
 	_build_banner()
 	_build_flash()
@@ -120,6 +141,8 @@ func show_toast(title: String, text: String, duration := 6.0, mood := "neutral")
 	_toast_label.text = text
 	_toast_icon.mood = mood
 	_toast_icon.talking = true
+	set_buddy_mood(mood, clampf(text.length() * 0.022, 0.2, 2.2) + 1.5)
+	_buddy.talking = true
 	_typing = true
 	_typed_chars = 0
 	_toast_label.visible_characters = 0
@@ -156,6 +179,8 @@ func _finish_typing() -> void:
 	_toast_label.visible_characters = -1
 	if _toast_icon != null:
 		_toast_icon.talking = false
+	if _buddy != null:
+		_buddy.talking = false
 
 
 # Caixa de informacao que aparece ao passar o mouse sobre uma peca do puzzle.
@@ -177,7 +202,89 @@ func hide_tooltip() -> void:
 	_tooltip.visible = false
 
 
+# ---------------------------------------------------------------- Echo da barra superior
+
+func set_buddy_mood(mood: String, hold := 2.5) -> void:
+	_buddy.mood = mood
+	_buddy_mood_until = Time.get_ticks_msec() / 1000.0 + hold
+
+
+# Sem mexer em nada por um tempo, o Echo cochila. Ao voltar, ele acorda assustado.
+func set_buddy_sleepy(value: bool) -> void:
+	if value == _buddy_sleepy:
+		return
+	_buddy_sleepy = value
+	if value:
+		_buddy.mood = "sleepy"
+	else:
+		set_buddy_mood("surprised", 1.2)
+
+
+func _update_buddy() -> void:
+	if Time.get_ticks_msec() / 1000.0 < _buddy_mood_until:
+		return
+	_buddy.mood = "sleepy" if _buddy_sleepy else "neutral"
+
+
+# ---------------------------------------------------------------- pergunta do Echo
+
+# Mostra uma pergunta com botoes. A resposta chega pelo sinal choice_made.
+# Teclas 1 a 4 tambem respondem (o main.gd encaminha para choose()).
+func ask(tag: String, question: String, options: Array) -> void:
+	hide_toast()
+	_choice_tag = tag
+	_choice_label.text = question
+	for child in _choice_buttons.get_children():
+		_choice_buttons.remove_child(child)
+		child.queue_free()
+	for i in range(options.size()):
+		var button := UI.make_button("%d  %s" % [i + 1, options[i]], 16)
+		button.pressed.connect(choose.bind(i))
+		_choice_buttons.add_child(button)
+	set_buddy_mood("thinking", 30.0)
+	_choice_holder.visible = true
+	_choice_holder.position = _toast_anchor - Vector2(0, 14)
+	_choice_holder.modulate.a = 0.0
+	var tween := create_tween()
+	tween.set_parallel(true)
+	tween.tween_property(_choice_holder, "modulate:a", 1.0, 0.2)
+	tween.tween_property(_choice_holder, "position:y", _toast_anchor.y, 0.3).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	if GameState.last_input_pad and _choice_buttons.get_child_count() > 0:
+		(_choice_buttons.get_child(0) as Control).grab_focus.call_deferred()
+
+
+func choose(index: int) -> void:
+	if not _choice_holder.visible or index < 0 or index >= _choice_buttons.get_child_count():
+		return
+	var tag := _choice_tag
+	hide_choice()
+	choice_made.emit(tag, index)
+
+
+func hide_choice() -> void:
+	if _choice_holder.visible:
+		_buddy_mood_until = 0.0
+	_choice_holder.visible = false
+	_choice_tag = ""
+	var focused := get_viewport().gui_get_focus_owner()
+	if focused != null and _choice_buttons.is_ancestor_of(focused):
+		focused.release_focus()
+
+
+func is_choice_open() -> bool:
+	return _choice_holder.visible
+
+
+func choice_tag() -> String:
+	return _choice_tag
+
+
+func choice_count() -> int:
+	return _choice_buttons.get_child_count()
+
+
 func _process(delta: float) -> void:
+	_update_buddy()
 	# Som curto de "fala" enquanto o texto do Echo e digitado.
 	if _typing and _toast_label.visible_characters - _typed_chars >= 3:
 		_typed_chars = _toast_label.visible_characters
@@ -202,9 +309,12 @@ func flash(strength := 0.55) -> void:
 	tween.tween_property(_flash, "color:a", 0.0, 0.6).set_ease(Tween.EASE_OUT)
 
 
-func show_victory(result: Dictionary, rotations: int, par: int, is_last: bool, seconds: float, echo_comment := "", explanation := "") -> void:
+func show_victory(result: Dictionary, rotations: int, par: int, is_last: bool, seconds: float, echo_comment := "", explanation := "", story_index := -1) -> void:
 	hide_toast()
+	hide_choice()
 	hide_tooltip()
+	set_buddy_mood("happy", 6.0)
+	_show_story(story_index)
 	_victory_echo.text = echo_comment
 	_victory_echo.get_parent().visible = echo_comment != ""
 	_victory_echo_icon.mood = "happy"
@@ -246,6 +356,19 @@ func show_victory(result: Dictionary, rotations: int, par: int, is_last: bool, s
 
 func hide_victory() -> void:
 	_victory_root.visible = false
+
+
+# Memoria do fragmento: aparece na vitoria quando a fase e concluida pela primeira vez.
+func _show_story(index: int) -> void:
+	var fragment := Historia.fragmento(index)
+	_story_box.visible = not fragment.is_empty()
+	if fragment.is_empty():
+		return
+	_story_title.text = "MEMÓRIA %d DE %d  ·  %s" % [index + 1, Historia.total(), fragment["titulo"]]
+	_story_text.text = fragment["texto"]
+	var texture := Historia.imagem(index)
+	_story_image.texture = texture
+	_story_image.visible = texture != null
 
 
 func show_pause(value: bool) -> void:
@@ -310,6 +433,17 @@ func _build_top_bar() -> void:
 		label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 		stats.add_child(label)
 
+	_buddy = EchoFace.new(19.0)
+	_buddy.mouse_filter = Control.MOUSE_FILTER_STOP
+	_buddy.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
+	_buddy.tooltip_text = "Converse com o Echo (T)"
+	_buddy.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	_buddy.gui_input.connect(func(event: InputEvent) -> void:
+		if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
+			echo_clicked.emit()
+	)
+	row.add_child(_buddy)
+
 	var buttons := HBoxContainer.new()
 	buttons.alignment = BoxContainer.ALIGNMENT_CENTER
 	buttons.add_theme_constant_override("separation", 8)
@@ -355,7 +489,7 @@ func _build_toast() -> void:
 	row.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_toast.add_child(row)
 
-	_toast_icon = EchoIcon.new()
+	_toast_icon = EchoFace.new()
 	row.add_child(_toast_icon)
 
 	var column := VBoxContainer.new()
@@ -372,6 +506,37 @@ func _build_toast() -> void:
 	_toast_label.visible_characters_behavior = TextServer.VC_CHARS_AFTER_SHAPING
 	column.add_child(_toast_title)
 	column.add_child(_toast_label)
+
+
+func _build_choice() -> void:
+	_choice_holder = Control.new()
+	_choice_holder.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_choice_holder.visible = false
+	add_child(_choice_holder)
+
+	var panel := UI.make_panel(Color(0.04, 0.08, 0.15, 0.97), Color(1.0, 0.86, 0.36, 0.7), 14, 14)
+	panel.custom_minimum_size = Vector2(640, 0)
+	_choice_holder.add_child(panel)
+
+	var row := HBoxContainer.new()
+	row.add_theme_constant_override("separation", 14)
+	panel.add_child(row)
+	var face := EchoFace.new()
+	face.mood = "thinking"
+	row.add_child(face)
+
+	var column := VBoxContainer.new()
+	column.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	column.add_theme_constant_override("separation", 8)
+	row.add_child(column)
+	column.add_child(UI.make_label("ECHO PERGUNTA", 14, UI.ACCENT, 800))
+	_choice_label = UI.make_label("", 17, UI.TEXT, 500)
+	_choice_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	_choice_label.custom_minimum_size.x = 540
+	column.add_child(_choice_label)
+	_choice_buttons = HBoxContainer.new()
+	_choice_buttons.add_theme_constant_override("separation", 8)
+	column.add_child(_choice_buttons)
 
 
 func _build_tooltip() -> void:
@@ -484,13 +649,36 @@ func _build_victory() -> void:
 	echo_row.alignment = BoxContainer.ALIGNMENT_CENTER
 	echo_row.add_theme_constant_override("separation", 10)
 	column.add_child(echo_row)
-	_victory_echo_icon = EchoIcon.new()
+	_victory_echo_icon = EchoFace.new()
 	echo_row.add_child(_victory_echo_icon)
 	_victory_echo = UI.make_label("", 17, Color(0.75, 0.95, 1.0), 600)
 	_victory_echo.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	_victory_echo.custom_minimum_size.x = 420
 	_victory_echo.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	echo_row.add_child(_victory_echo)
+
+	_story_box = UI.make_panel(Color(0.08, 0.07, 0.16, 0.9), Color(0.78, 0.66, 1.0, 0.55), 10, 12)
+	_story_box.visible = false
+	column.add_child(_story_box)
+	var story_row := HBoxContainer.new()
+	story_row.add_theme_constant_override("separation", 12)
+	_story_box.add_child(story_row)
+	_story_image = TextureRect.new()
+	_story_image.custom_minimum_size = Vector2(150, 100)
+	_story_image.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	_story_image.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	_story_image.visible = false
+	story_row.add_child(_story_image)
+	var story_column := VBoxContainer.new()
+	story_column.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	story_column.add_theme_constant_override("separation", 4)
+	story_row.add_child(story_column)
+	_story_title = UI.make_label("", 13, Color(0.85, 0.75, 1.0), 800)
+	_story_text = UI.make_label("", 15, Color(0.92, 0.9, 1.0), 500)
+	_story_text.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	_story_text.custom_minimum_size.x = 340
+	story_column.add_child(_story_title)
+	story_column.add_child(_story_text)
 
 	_why_button = UI.make_button("Por que funcionou?  ▾", 16)
 	_why_button.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
@@ -578,53 +766,6 @@ class StarRow extends Control:
 			var amount := clampf(reveal - i, 0.0, 1.25)
 			if i < count and amount > 0.0:
 				Kit.draw_star(self, center, base_radius * amount, true)
-
-
-class EchoIcon extends Control:
-	# Expressoes: neutral, happy, thinking, surprised. "talking" faz o Echo pulsar enquanto fala.
-	var mood := "neutral"
-	var talking := false
-	var _time := 0.0
-
-	func _init() -> void:
-		custom_minimum_size = Vector2(46, 46)
-		mouse_filter = Control.MOUSE_FILTER_IGNORE
-
-	func _process(delta: float) -> void:
-		_time += delta
-		queue_redraw()
-
-	func _draw() -> void:
-		var bounce_speed := 6.0 if mood == "happy" else 2.4
-		var center := size * 0.5 + Vector2(0, sin(_time * bounce_speed) * 2.0)
-		var pulse := 0.5 + 0.5 * sin(_time * (14.0 if talking else 3.0))
-		var glow := Color(0.3, 0.8, 1.0)
-		if mood == "happy":
-			glow = Color(0.5, 1.0, 0.6)
-		elif mood == "thinking":
-			glow = Color(1.0, 0.85, 0.4)
-		elif mood == "surprised":
-			glow = Color(1.0, 0.55, 0.6)
-		draw_circle(center, 22.0, Color(glow.r, glow.g, glow.b, 0.12 + pulse * 0.1))
-		draw_circle(center, 16.0, Color(0.12, 0.3, 0.5))
-		draw_circle(center, 16.0, glow.lightened(0.3), false, 2.0, true)
-
-		if mood == "happy":
-			# Olho sorrindo (arco para cima).
-			draw_arc(center + Vector2(0, 3), 6.0, PI * 1.1, PI * 1.9, 12, Color(0.85, 1.0, 1.0), 3.0, true)
-			return
-		var eye_radius := 7.5 if mood == "surprised" else 6.0
-		var pupil := Vector2(1.5, 0)
-		if mood == "thinking":
-			pupil = Vector2(2.5, -2.5)
-			for i in range(3):
-				var alpha := 0.35 + 0.65 * (0.5 + 0.5 * sin(_time * 4.0 - i))
-				draw_circle(center + Vector2(10 + i * 6, -19), 2.0, Color(1.0, 0.9, 0.5, alpha))
-		var blink := 0.15 if fmod(_time, 3.2) < 0.12 else 1.0
-		draw_set_transform(center, 0.0, Vector2(1.0, blink))
-		draw_circle(Vector2.ZERO, eye_radius, Color(0.85, 1.0, 1.0))
-		draw_circle(pupil, 2.0 if mood == "surprised" else 2.5, Color(0.05, 0.15, 0.25))
-		draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
 
 
 class PrismLogo extends Control:

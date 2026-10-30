@@ -96,6 +96,24 @@ func play(sound_name: String, pitch := 1.0) -> void:
 	player.play()
 
 
+# Nota de sino (cristal aceso). O som e gerado na primeira vez e guardado.
+func play_tone(frequency: float) -> void:
+	var key := "tone_%d" % int(frequency)
+	if not _streams.has(key):
+		_streams[key] = _synth([[frequency, 0.0, 0.9], [frequency * 2.0, 0.0, 0.45]], 1.0, "sine", 4.5, 0.24)
+	play(key)
+
+
+# Melodia de varias notas (ver scripts/musica.gd), gerada uma vez por chave.
+func play_melody(key: String, notes: Array) -> void:
+	if not _streams.has(key):
+		var length := 0.0
+		for note in notes:
+			length = maxf(length, float(note[1]) + float(note[2]))
+		_streams[key] = _synth(notes, length + 0.1, "sine", 3.5, 0.2)
+	play(key)
+
+
 # notes: lista de [frequencia, inicio, duracao]. Frequencia 0 gera ruido (estalo).
 func _synth(notes: Array, length: float, wave: String, decay: float, volume: float) -> AudioStreamWAV:
 	var count := int(length * MIX_RATE)

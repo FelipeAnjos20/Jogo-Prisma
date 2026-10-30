@@ -1,6 +1,6 @@
 # GDD — PRISMA: O lugar onde a luz quebrou
 
-**Game Design Document** · versão do jogo **3.1.0** · versão em PDF: [GDD_PRISMA.pdf](GDD_PRISMA.pdf)
+**Game Design Document** · versão do jogo **3.2.0** · versão em PDF: [GDD_PRISMA.pdf](GDD_PRISMA.pdf)
 
 Equipe: Eduardo Macedo, Felipe dos Anjos, Felipe Schwabe, Vinicius Mesquita
 PAC Extensionista III · Engenharia de Software · Católica de Santa Catarina · Prof. Diego Sauter Possamai
@@ -52,13 +52,30 @@ cristais de cada sala e restaurar o Prisma de Luz, um fragmento por vez.
 
 ## 3. Narrativa
 
-O laboratório de luz era iluminado pelo **Prisma de Luz**, que se partiu em dez fragmentos. Cada
-fragmento ficou preso em uma sala, guardado por cristais apagados. O jogador é guiado por **Echo**,
-um pequeno assistente luminoso que apresenta cada mecânica e oferece dicas.
+O **Prisma de Luz** ficava no alto do **Farol de Aurora** e guiava quem estivesse perdido no vale.
+Numa noite de tempestade, um raio atingiu o farol e o Prisma se partiu em dez fragmentos, que caíram
+nas salas escuras do subsolo. O jogador é guiado por **Echo**, uma faísca que continuou acesa no meio
+das ruínas e aprendeu a falar.
 
-A cada sala concluída um fragmento é recuperado e aparece aceso, com uma cor do espectro, no prisma
-do menu principal. Ao final da fase 10 o prisma é restaurado e a tela final celebra a conquista.
-A narrativa é leve e dá sentido à progressão sem interromper os puzzles.
+Cada sala concluída pela primeira vez devolve uma **memória** (`scripts/historia.gd`), mostrada no painel
+de vitória e guardada em **Memórias do Prisma**, no menu:
+
+| # | Memória | O que revela |
+| --- | --- | --- |
+| 1 | O Farol de Aurora | Onde o Prisma ficava e para que servia |
+| 2 | A noite sem estrelas | A tempestade que o quebrou |
+| 3 | As salas escuras | De onde vêm os blocos que absorvem a luz |
+| 4 | Os guardiões travados | Por que alguns espelhos não giram |
+| 5 | O vidro que divide | A origem do divisor |
+| 6 | As cores adormecidas | Por que os filtros tingem a luz |
+| 7 | Cada cor no seu caminho | Por que cada cor precisa de uma rota |
+| 8 | Uma voz no escuro | Quem é Echo |
+| 9 | O segredo de Echo | Echo é o último brilho do próprio Prisma |
+| 10 | O Prisma inteiro | O farol acende de novo |
+
+Cada memória explica, dentro da história, a mecânica que o jogador acabou de usar. O fragmento também
+acende no prisma do menu. Ao final da fase 10, a tela final mostra o agradecimento de Echo, com o nome
+do jogador. A narrativa é curta e não interrompe os puzzles.
 
 ## 4. Core loop
 
@@ -185,16 +202,35 @@ comentários para não poluir a tela.
 
 ![Dica de segundo nível](img/dica.png)
 
+### 9.3 Echo como personagem (versão 3.2)
+
+- **Sempre visível:** Echo fica na barra superior, o olho acompanha o mouse e a expressão muda com o que
+  acontece (feliz, pensativo, surpreso). Sem nenhuma ação por 30 s, ele **cochila** ("Zzz") e acorda
+  assustado quando o jogador volta.
+- **Conversa por botões:** clicar em Echo (ou `T`) abre uma pergunta com respostas: **uma dica**, **uma
+  curiosidade** sobre a luz (arco-íris, fibra óptica, periscópio, céu azul...), **falar menos/mais** e
+  **nada, valeu**. As teclas `1` a `4` também respondem.
+- **Nome do jogador:** na primeira partida Echo pergunta o nome (é possível pular). As falas usam o
+  marcador `{nome}`, que some sem deixar vírgula sobrando quando não há nome.
+- **Estilo de ajuda:** na fase 2 Echo pergunta se o jogador quer pistas quando travar. No modo
+  **"Deixa comigo!"**, ficam desligadas as falas de ajuda ("Quase!", quente ou frio, travou, posição
+  repetida); continuam as comemorações e os avisos de eventos. A escolha também fica em *Opções*.
+
+![Conversa com o Echo](img/echo_conversa.png)
+
 ## 10. Interface e telas
 
 | Tela | Conteúdo |
 | --- | --- |
-| Menu principal | Jogar/Continuar, Seleção de fases, Como jogar, Opções, Créditos, Sair; prisma animado com os fragmentos recuperados; total de estrelas |
+| Menu principal | Jogar/Continuar, Seleção de fases, Memórias do Prisma, Como jogar, Opções, Créditos, Sair; prisma animado com os fragmentos recuperados; total de estrelas |
+| Nome do jogador | Na primeira partida: Echo se apresenta e pergunta o nome (Começar / Prefiro não dizer) |
+| Memórias do Prisma | As 10 memórias da história; as bloqueadas mostram qual fase concluir |
 | Seleção de fases | 10 cartões com miniatura da sala, meta, recorde, estrelas e cadeado |
 | HUD da fase | Nome, objetivo, rotações (com cor em relação à meta), cristais acesos, botões Dica/Reiniciar/Pausa; linha de controles que muda quando o controle é usado |
-| Vitória | Título de fragmento, estrelas animadas, rotações, meta, tempo, recorde; Fases / Jogar de novo / Próxima fase |
+| Vitória | Título de fragmento, estrelas animadas, rotações, meta, tempo, recorde, comentário do Echo, memória do fragmento (1ª vez), "Por que funcionou?"; Fases / Jogar de novo / Próxima fase |
 | Pausa | Continuar, Reiniciar, Música, Seleção de fases, Menu principal |
-| Tela final | Prisma restaurado com os 10 fragmentos, confete, total de estrelas |
+| Tela final | Prisma restaurado com os 10 fragmentos, agradecimento do Echo com o nome do jogador, confete, total de estrelas |
+| Opções | Volumes, tela cheia, guia de ângulos, apagar progresso; cartão "Você e o Echo" com o nome e as pistas ligadas/desligadas |
 
 ![Seleção de fases](img/selecao.png)
 
@@ -213,12 +249,17 @@ nitidez em qualquer resolução e permite animar tudo.
 | Painéis | `#090E1A` + borda `#6BB8FF` | Cantos arredondados e sombra suave |
 
 O feixe é desenhado em camadas com *blend* aditivo, o que cria o brilho, e tem pulsos viajando na
-direção da luz. Na vitória há *flash*, um leve tremor de câmera e partículas.
+direção da luz. Na vitória há *flash*, um leve tremor de câmera e faíscas saindo de todo o caminho da luz.
+O espelho balança ao girar, e o cristal apagado treme e brilha fraco quando o raio passa a menos de
+100 px dele ("quase lá").
 
 ## 12. Áudio
 
 - **Música:** trilha do menu (`menu_loop.mp3`) e das fases (`gameplay_music.mp3`), em loop, com transição suave. Não reinicia ao trocar de fase.
 - **Efeitos (11, sintetizados por código):** passar o mouse, clique, selecionar, girar, desfazer, espelho travado, cristal aceso, cristal apagado, dica, vitória e fanfarra final.
+- **A luz vira música** (`scripts/musica.gd`): cada cristal aceso toca a próxima nota de um acorde
+  (dó, mi, sol, dó, mi); cada uma das 12 posições do espelho tem um tom da escala pentatônica; e cada
+  fase termina com uma melodia própria (4 notas e um acorde final). Tudo é gerado por código.
 - Volumes de música e efeitos independentes e salvos; `M` liga e desliga a música.
 
 ## 13. Acessibilidade
@@ -233,7 +274,7 @@ direção da luz. Na vitória há *flash*, um leve tremor de câmera e partícul
 
 - **Fases guiadas por dados:** `scripts/levels.gd` descreve cada fase (gerado a partir de `tools/level_simulator/levels.json`). A cena `scenes/main.tscn` cria os objetos a partir desses dados ([ADR 001](adr/001-fases-como-dados-em-script.md)).
 - **Regras puras e testáveis:** `scripts/geometria.gd` (rotação, reflexão, interseções, estrelas, ângulo de incidência, inclinação) e `scripts/feixe.gd` (caminho da luz com fila de raios para divisores e prismas). O jogo e os testes usam o mesmo código ([ADR 005](adr/005-calculo-do-feixe-puro-e-testavel.md)).
-- **Interatividade:** `scripts/echo_brain.gd` (falas do Echo), `scripts/angle_guide.gd` (guia de ângulos). As reflexões usadas pelo guia e pela explicação vêm do mesmo `Feixe.tracar()`.
+- **Interatividade:** `scripts/echo_brain.gd` (falas do Echo, nome do jogador e modo "Deixa comigo"), `scripts/echo_face.gd` (rosto do Echo), `scripts/musica.gd` (notas e melodias), `scripts/historia.gd` (memórias dos fragmentos), `scripts/angle_guide.gd` (guia de ângulos). As reflexões usadas pelo guia e pela explicação vêm do mesmo `Feixe.tracar()`.
 - **Autoloads:** `GameState` (progresso e salvamento em `user://prisma_save.cfg`), `Sfx` (áudio) e `Transition` (transições).
 - **Qualidade:** `tests/run_tests.gd` cobre as regras e as 10 fases; a CI roda os testes a cada push, e a CD publica a build Windows a cada tag de versão.
 

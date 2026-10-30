@@ -28,6 +28,8 @@ var ghost_degrees := 0.0
 var _time := 0.0
 var _flash := 0.0
 var _shake := 0.0
+# Balanco depois de cada giro (so visual: o feixe usa o angulo exato).
+var _wobble := 0.0
 
 
 func configure(data: Dictionary, key_number: int) -> void:
@@ -58,6 +60,7 @@ func rotate_step(direction: int) -> bool:
 	# Regra do passo de 15 graus isolada e testada em Geometria (ver docs/adr/002).
 	target_degrees = Geometria.proximo_angulo(target_degrees, direction, STEP_DEGREES)
 	_flash = 1.0
+	_wobble = 1.0
 	rotated.emit(self, previous)
 	return true
 
@@ -65,6 +68,7 @@ func rotate_step(direction: int) -> bool:
 func restore_rotation(degrees: float) -> void:
 	target_degrees = degrees
 	_flash = 0.6
+	_wobble = 0.7
 
 
 func shake_locked() -> void:
@@ -125,6 +129,7 @@ func _process(delta: float) -> void:
 
 	_flash = maxf(0.0, _flash - delta * 3.0)
 	_shake = maxf(0.0, _shake - delta * 3.5)
+	_wobble = maxf(0.0, _wobble - delta * 2.2)
 	queue_redraw()
 
 
@@ -132,6 +137,9 @@ func _draw() -> void:
 	var half := half_length()
 	var shake_offset := Vector2(0.0, sin(_time * 70.0) * 3.0 * _shake)
 	var pulse := 0.5 + 0.5 * sin(_time * 4.0)
+	if _wobble > 0.0:
+		var swing := sin(_wobble * 26.0) * deg_to_rad(4.0) * _wobble
+		draw_set_transform(Vector2.ZERO, swing, Vector2(1.0 + 0.05 * _wobble, 1.0 - 0.12 * _wobble))
 
 	# Anel de rotacao quando selecionado.
 	if is_selected:

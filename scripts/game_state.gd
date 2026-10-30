@@ -5,6 +5,7 @@ extends Node
 const SAVE_PATH := "user://prisma_save.cfg"
 const LevelData := preload("res://scripts/levels.gd")
 const Geometria = preload("res://scripts/geometria.gd")
+const EchoBrain := preload("res://scripts/echo_brain.gd")
 
 var levels: Array = []
 var unlocked_level := 0
@@ -21,6 +22,12 @@ var music_enabled := true
 # Guia de angulos e explicacoes (parte educativa). Tecla G liga/desliga.
 var show_angles := true
 var fullscreen := false
+
+# O Echo pergunta o nome na primeira partida e como o jogador prefere ser ajudado.
+var player_name := ""
+var name_asked := false
+# "": ainda nao perguntou, "ajuda": da pistas quando o jogador trava, "sozinho": so comemora.
+var echo_help := ""
 
 # true quando o jogador esta usando teclado/controle nos menus (mostra o destaque de foco).
 var last_input_pad := false
@@ -216,6 +223,17 @@ func set_show_angles(value: bool) -> void:
 	save_data()
 
 
+func set_player_name(value: String) -> void:
+	player_name = EchoBrain.limpar_nome(value)
+	name_asked = true
+	save_data()
+
+
+func set_echo_help(mode: String) -> void:
+	echo_help = mode
+	save_data()
+
+
 func set_fullscreen(value: bool) -> void:
 	fullscreen = value
 	_apply_window_mode()
@@ -248,6 +266,9 @@ func save_data() -> void:
 	config.set_value("settings", "music_enabled", music_enabled)
 	config.set_value("settings", "fullscreen", fullscreen)
 	config.set_value("settings", "show_angles", show_angles)
+	config.set_value("player", "name", player_name)
+	config.set_value("player", "name_asked", name_asked)
+	config.set_value("player", "echo_help", echo_help)
 	config.save(SAVE_PATH)
 
 
@@ -264,6 +285,9 @@ func load_data() -> void:
 	music_enabled = bool(config.get_value("settings", "music_enabled", music_enabled))
 	fullscreen = bool(config.get_value("settings", "fullscreen", fullscreen))
 	show_angles = bool(config.get_value("settings", "show_angles", show_angles))
+	player_name = EchoBrain.limpar_nome(str(config.get_value("player", "name", player_name)))
+	name_asked = bool(config.get_value("player", "name_asked", name_asked))
+	echo_help = str(config.get_value("player", "echo_help", echo_help))
 
 
 func _copy_into(target: Array, source, fallback: int) -> void:

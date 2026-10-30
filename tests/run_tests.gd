@@ -10,6 +10,9 @@ const MirrorScript = preload("res://scripts/mirror.gd")
 const FilterScript = preload("res://scripts/color_filter.gd")
 const CrystalScript = preload("res://scripts/crystal.gd")
 const PrismScript = preload("res://scripts/prism.gd")
+const Musica = preload("res://scripts/musica.gd")
+const Historia = preload("res://scripts/historia.gd")
+const EchoBrain = preload("res://scripts/echo_brain.gd")
 
 var _total := 0
 var _falhas := 0
@@ -41,6 +44,15 @@ func _init() -> void:
 
 	# Todas as fases: solucao existe, nao comecam resolvidas e a meta confere
 	_test_fases()
+
+	# Interatividade (v3.2): musica, historia e conversa com o Echo
+	_test_notas_dos_cristais()
+	_test_espelho_canta()
+	_test_melodia_de_vitoria()
+	_test_historia()
+	_test_nome_do_jogador()
+	_test_modo_deixa_comigo()
+	_test_falas_do_echo()
 
 	if _falhas == 0:
 		print("OK: %d/%d testes passaram" % [_total, _total])
@@ -260,3 +272,78 @@ func _todos_acesos(fase: Dictionary, angulos: Array) -> bool:
 		if not aceso:
 			return false
 	return true
+
+
+# ---------------------------------------------------------------- interatividade
+
+func _test_notas_dos_cristais() -> void:
+	var anterior := 0.0
+	var subindo := true
+	for ordem in range(5):
+		var nota := Musica.nota_do_cristal(ordem)
+		subindo = subindo and nota > anterior and Musica.ESCALA.has(nota)
+		anterior = nota
+	_assert_eq("cada cristal aceso toca uma nota mais aguda da escala", subindo, true)
+	_assert_eq("ordem acima do acorde repete a nota mais aguda", Musica.nota_do_cristal(9), Musica.nota_do_cristal(4))
+
+
+func _test_espelho_canta() -> void:
+	_assert_proximo("espelho a 0 e a 180 graus tem o mesmo tom", Musica.pitch_do_angulo(0.0), Musica.pitch_do_angulo(180.0))
+	var tons := {}
+	var dentro := true
+	for passo in range(12):
+		var tom := Musica.pitch_do_angulo(passo * 15.0)
+		tons[snappedf(tom, 0.001)] = true
+		dentro = dentro and tom >= 0.5 and tom <= 2.5
+	_assert_eq("as 12 posicoes do espelho tem tons diferentes", tons.size(), 12)
+	_assert_eq("os tons do espelho ficam numa faixa audivel", dentro, true)
+
+
+func _test_melodia_de_vitoria() -> void:
+	var melodia := Musica.melodia_da_fase(3)
+	_assert_eq("melodia de vitoria tem 4 notas e um acorde de 3", melodia.size(), 7)
+	_assert_eq("a melodia de uma fase e sempre a mesma", melodia, Musica.melodia_da_fase(3))
+	_assert_eq("fases diferentes tem melodias diferentes", Musica.melodia_da_fase(0) == Musica.melodia_da_fase(1), false)
+	var na_escala := true
+	for indice in range(Levels.get_levels().size()):
+		for nota in Musica.melodia_da_fase(indice):
+			na_escala = na_escala and Musica.ESCALA.has(nota[0])
+	_assert_eq("todas as melodias usam notas da escala", na_escala, true)
+
+
+func _test_historia() -> void:
+	_assert_eq("cada fase devolve uma memoria da historia", Historia.total(), Levels.get_levels().size())
+	var completas := true
+	for indice in range(Historia.total()):
+		var fragmento := Historia.fragmento(indice)
+		completas = completas and str(fragmento.get("titulo", "")) != "" and str(fragmento.get("texto", "")) != ""
+	_assert_eq("toda memoria tem titulo e texto", completas, true)
+	_assert_eq("indice fora da historia devolve vazio", Historia.fragmento(99), {})
+	_assert_eq("caminho da ilustracao opcional", Historia.caminho_imagem(0), "res://assets/story/fragmento_01.png")
+
+
+func _test_nome_do_jogador() -> void:
+	_assert_eq("Echo chama o jogador pelo nome", EchoBrain.personalizar("Oi, {nome}!", "Ana"), "Oi, Ana!")
+	_assert_eq("sem nome, a frase fica correta", EchoBrain.personalizar("Oi, {nome}!", ""), "Oi!")
+	_assert_eq("sem nome, o final da historia fica correto", EchoBrain.personalizar(Historia.EPILOGO, "").begins_with("Obrigado! "), true)
+	_assert_eq("nome sem espacos sobrando", EchoBrain.limpar_nome("   Felipe   dos  Anjos "), "Felipe dos Anjos")
+	_assert_eq("nome com no maximo 16 letras", EchoBrain.limpar_nome("Maria Eduarda da Silva").length() <= 16, true)
+	_assert_eq("nome sem simbolos de formatacao", EchoBrain.limpar_nome("{Bia}%"), "Bia")
+
+
+func _test_modo_deixa_comigo() -> void:
+	_assert_eq("no modo ajuda o Echo da pistas", EchoBrain.fala_permitida("near_miss", "ajuda"), true)
+	_assert_eq("no modo deixa comigo o Echo nao da pistas", EchoBrain.fala_permitida("near_miss", "sozinho"), false)
+	_assert_eq("no modo deixa comigo o Echo continua comemorando", EchoBrain.fala_permitida("crystal_on", "sozinho"), true)
+
+
+func _test_falas_do_echo() -> void:
+	var echo = EchoBrain.new()
+	var sem_marcador := true
+	for chave in EchoBrain.LINES.keys():
+		for fala in EchoBrain.LINES[chave]:
+			var texto: String = fala
+			sem_marcador = sem_marcador and not EchoBrain.personalizar(texto, "").contains("{") and not EchoBrain.personalizar(texto, "Bia").contains("{")
+	_assert_eq("nenhuma fala do Echo fica com marcador sobrando", sem_marcador, true)
+	echo.player_name = "Bia"
+	_assert_eq("a curiosidade do Echo nunca vem vazia", echo.say("curiosity") != "", true)

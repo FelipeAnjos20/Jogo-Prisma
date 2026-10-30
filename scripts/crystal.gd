@@ -7,10 +7,13 @@ const RADIUS := 28.0
 
 var required_color := "any"
 var is_lit := false
+# 0 a 1: quanto o raio esta perto deste cristal apagado (o main.gd atualiza a cada quadro).
+var near := 0.0
 
 var _time := 0.0
 var _glow := 0.0
 var _burst := 0.0
+var _near_visual := 0.0
 var _particles: Array = []
 
 
@@ -18,6 +21,8 @@ func configure(data: Dictionary) -> void:
 	position = data["position"]
 	required_color = data["color"]
 	is_lit = false
+	near = 0.0
+	_near_visual = 0.0
 	_glow = 0.0
 	_burst = 0.0
 	_particles.clear()
@@ -55,6 +60,7 @@ func _process(delta: float) -> void:
 	_time += delta
 	_glow = move_toward(_glow, 1.0 if is_lit else 0.0, delta * 4.0)
 	_burst = maxf(0.0, _burst - delta * 1.4)
+	_near_visual = move_toward(_near_visual, 0.0 if is_lit else near, delta * 3.0)
 
 	for particle in _particles:
 		particle["age"] += delta
@@ -77,6 +83,13 @@ func _draw() -> void:
 	draw_circle(Vector2.ZERO, RADIUS + 4.0, Color(0.0, 0.0, 0.0, 0.35))
 	draw_circle(Vector2.ZERO, RADIUS, Color(color.r, color.g, color.b, 0.25 + _glow * 0.35))
 	draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
+
+	# "Quase la": o cristal treme e brilha fraquinho quando o raio passa perto.
+	if _near_visual > 0.01:
+		var jitter := Vector2(sin(_time * 47.0), cos(_time * 39.0)) * 2.2 * _near_visual
+		draw_set_transform(jitter, 0.0, Vector2.ONE)
+		var flicker := 0.6 + 0.4 * sin(_time * 18.0)
+		draw_circle(Vector2(0, bob), RADIUS + 18.0 + _near_visual * 10.0, Color(base.r, base.g, base.b, 0.22 * _near_visual * flicker))
 
 	# Aura.
 	var aura := 0.1 + pulse * 0.08 + _glow * 0.25
@@ -135,3 +148,4 @@ func _draw() -> void:
 		var fade := 1.0 - float(particle["age"]) / float(particle["life"])
 		var position_p: Vector2 = particle["position"] + Vector2(0, bob)
 		draw_circle(position_p, 2.5 * fade + 0.5, Color(base.r, base.g, base.b, fade).lightened(0.3))
+	draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)

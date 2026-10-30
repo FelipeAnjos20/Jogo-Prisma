@@ -82,6 +82,27 @@ func trace(emitter: Node2D, mirrors: Array, filters: Array, obstacles: Array, cr
 
 # ---------------------------------------------------------------- efeitos
 
+# Vitoria: faiscas saem de todo o caminho da luz, na cor de cada trecho.
+func celebrate() -> void:
+	for segment in segments:
+		var start := to_local(segment["a"])
+		var end := to_local(segment["b"])
+		var length := start.distance_to(end)
+		if length < 1.0:
+			continue
+		var color := UI.light_color(segment["color"])
+		var normal := (end - start).normalized().orthogonal()
+		for i in range(int(clampf(length / 22.0, 2.0, 40.0))):
+			var side := 1.0 if randf() < 0.5 else -1.0
+			_sparks.append({
+				"position": start.lerp(end, randf()),
+				"velocity": normal * side * randf_range(120.0, 320.0),
+				"age": 0.0,
+				"life": randf_range(0.6, 1.2),
+				"color": color,
+			})
+
+
 func _update_sparks(delta: float) -> void:
 	_spark_timer += delta
 	if _spark_timer >= 0.03:

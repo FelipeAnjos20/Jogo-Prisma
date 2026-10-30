@@ -3,6 +3,9 @@ extends Node2D
 # Tela final: celebra a conclusao do jogo e mostra o total de estrelas.
 
 const UI := preload("res://scripts/ui_kit.gd")
+const Historia := preload("res://scripts/historia.gd")
+const EchoBrain := preload("res://scripts/echo_brain.gd")
+const EchoFace := preload("res://scripts/echo_face.gd")
 
 @onready var prism: Node2D = $Prism
 @onready var title_label: Label = $HUD/TitleLabel
@@ -13,6 +16,7 @@ const UI := preload("res://scripts/ui_kit.gd")
 
 var time := 0.0
 var _buttons: HBoxContainer
+var _epilogue: HBoxContainer
 
 
 func _ready() -> void:
@@ -34,11 +38,13 @@ func _ready() -> void:
 	subtitle_label.text = "Você recuperou os %d fragmentos e restaurou o Prisma de Luz.\n%s" % [total, stars_line]
 
 	_build_buttons(earned < total * 3)
+	_build_epilogue()
 
 	title_label.modulate.a = 0.0
 	subtitle_label.modulate.a = 0.0
 	hint_label.modulate.a = 0.0
 	_buttons.modulate.a = 0.0
+	_epilogue.modulate.a = 0.0
 	title_label.scale = Vector2(0.72, 0.72)
 	prism.scale = Vector2(0.6, 0.6)
 
@@ -50,11 +56,29 @@ func _ready() -> void:
 	tween.tween_property(prism, "scale", Vector2.ONE, 0.9).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
 	tween.tween_property(title_label, "modulate:a", 1.0, 0.35)
 	tween.tween_property(title_label, "scale", Vector2.ONE, 0.6).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	tween.chain().tween_property(_epilogue, "modulate:a", 1.0, 0.45)
 	tween.chain().tween_property(subtitle_label, "modulate:a", 1.0, 0.45)
 	tween.chain().tween_property(_buttons, "modulate:a", 1.0, 0.35)
 	tween.parallel().tween_property(hint_label, "modulate:a", 1.0, 0.35)
 	if GameState.last_input_pad:
 		tween.chain().tween_callback(GameState.focus_default)
+
+
+# Final da historia: o Echo agradece o jogador pelo nome.
+func _build_epilogue() -> void:
+	_epilogue = HBoxContainer.new()
+	_epilogue.alignment = BoxContainer.ALIGNMENT_CENTER
+	_epilogue.add_theme_constant_override("separation", 12)
+	_epilogue.position = Vector2(140, 140)
+	_epilogue.size = Vector2(1000, 70)
+	hud.add_child(_epilogue)
+	var face := EchoFace.new(18.0)
+	face.mood = "happy"
+	_epilogue.add_child(face)
+	var line := UI.make_label(EchoBrain.personalizar(Historia.EPILOGO, GameState.player_name), 18, Color(0.85, 0.95, 1.0), 600, 4)
+	line.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	line.custom_minimum_size.x = 860
+	_epilogue.add_child(line)
 
 
 func _build_buttons(show_improve_tip: bool) -> void:

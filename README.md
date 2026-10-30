@@ -123,7 +123,8 @@ O manual completo, com checklist de conferência e solução de problemas, está
 
 ### Iniciando uma partida
 
-1. No menu principal, clique em **Jogar** (ou **Continuar**, se já houver progresso). Você também pode
+1. No menu principal, clique em **Jogar** (ou **Continuar**, se já houver progresso). Na primeira vez,
+   o Echo se apresenta e pergunta **como você quer ser chamado** (dá para pular). Você também pode
    escolher qualquer fase liberada em **Seleção de fases**.
 2. A **fase 1 tem um tutorial**: uma seta animada mostra qual espelho girar, e o assistente Echo
    explica a mecânica. Em cada fase nova, Echo apresenta o elemento novo.
@@ -146,6 +147,7 @@ O manual completo, com checklist de conferência e solução de problemas, está
 | Ir para a próxima fase (após vencer) | `N`, `Enter` ou `Espaço` | A |
 | Mostrar/esconder o guia de ângulos | `G` | — |
 | Saber o que é uma peça | Parar o mouse sobre ela | — |
+| Conversar com o Echo (dica, curiosidade, falar menos/mais) | Clicar no Echo da barra superior ou `T`; responder com clique ou `1`–`4` | — |
 | Ligar/desligar a música | `M` | Select |
 | Tela cheia | `F11` ou `Alt+Enter` | — |
 
@@ -174,6 +176,30 @@ O PRISMA reage a cada ação do jogador:
 ![Echo reagindo à cor errada](docs/img/echo_reage.png)
 
 ![Por que funcionou?](docs/img/porque_funcionou.png)
+
+### Mais interativo (versão 3.2)
+
+- **A luz vira música.** Cada cristal aceso toca a próxima nota de um acorde, então resolver uma fase
+  com vários cristais "monta" uma música. Cada posição do espelho tem um tom próprio, e cada fase
+  termina com a **sua** melodia de vitória.
+- **Cristal "quase lá".** Quando o raio passa perto de um cristal apagado, ele **treme e brilha fraquinho**.
+  Quanto mais perto, mais forte: é uma pista visual que não entrega a resposta.
+- **Peças com peso.** O espelho balança ao girar, e na vitória saem faíscas de todo o caminho da luz.
+- **Echo é um personagem.** Ele fica na barra superior, **olha para o mouse**, muda de expressão, cochila
+  se você ficar muito tempo parado (e acorda assustado quando você volta). **Clique nele** (ou `T`) para
+  pedir uma dica, ouvir uma curiosidade sobre a luz ou pedir que ele fale menos.
+- **O jogador responde ao Echo.** Ele pergunta seu nome no início e passa a te chamar por ele. Na fase 2,
+  pergunta se você quer pistas quando travar: **"Sim, me ajuda!"** ou **"Deixa comigo!"**. No modo
+  "Deixa comigo", ele só comemora e avisa o que acontece. A escolha pode ser mudada em *Opções*.
+- **Os fragmentos contam uma história.** Cada fase concluída pela primeira vez devolve uma **memória** do
+  Prisma: o Farol de Aurora, a tempestade que o quebrou e o segredo de Echo. Todas ficam guardadas em
+  **Memórias do Prisma**, no menu, e a última libera o final.
+
+![Echo pergunta o nome](docs/img/echo_nome.png)
+
+![Conversa com o Echo](docs/img/echo_conversa.png)
+
+![Memória recuperada na vitória](docs/img/memoria_fragmento.png)
 
 ## 7. Objetivo, regras, vitória e progressão
 
@@ -250,8 +276,10 @@ desfazer (`Z`) e reiniciar (`R`). O desafio está em resolver com **poucas rota�
 - O **painel de vitória cobre o centro da sala**. O jogador vê os cristais acenderem por cerca de 1 segundo
   antes de o painel aparecer.
 - O **Echo** reage a situações previstas (cristal aceso ou apagado, raio passando perto, quente ou frio,
-  cor errada, muitos giros sem progresso, posição repetida). Ele não entende texto livre nem responde
-  a perguntas digitadas.
+  cor errada, muitos giros sem progresso, posição repetida). A conversa com ele é por **botões de
+  resposta**: ele não entende texto livre nem responde a perguntas digitadas.
+- As **memórias** da história são só texto. A tela já aceita uma ilustração por memória
+  (`assets/story/fragmento_01.png` a `fragmento_10.png`), mas as imagens ainda não foram feitas.
 - O **controle** usa só botões e direcional; o analógico não é usado.
 - Não há opções de **tamanho de texto**, **alto contraste** nem **remapeamento de teclas**.
 - O jogo está disponível só em **português**.
@@ -297,7 +325,7 @@ Jogo-Prisma/
 │   └── ...                    # espelho, cristal, prisma, filtro, bloqueio, emissor, menus, arte
 ├── ui/prisma_theme.tres       # tema visual de botões e painéis
 ├── assets/audio/              # músicas do menu e das fases
-├── tests/run_tests.gd         # testes automatizados (79 verificações, incluindo as 10 fases)
+├── tests/run_tests.gd         # testes automatizados (103 verificações, incluindo as 10 fases)
 ├── tools/level_simulator/     # simulador de fases em Node.js (ignorado pelo Godot)
 ├── docs/                      # GDD, manual, vídeo, contexto, ADRs, créditos, imagens
 ├── .github/workflows/         # CI (testes) e CD (build + release por tag)

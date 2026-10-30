@@ -36,6 +36,10 @@ Luz como progressao narrativa, assistente Echo com dicas em dois niveis, salvame
 automatico, selecao de fases, suporte a teclado, mouse e controle, e acessibilidade
 para daltonismo (cada cor tambem tem uma forma).
 
+Na versao 3.2.0 a luz virou musica, o Echo passou a ser um personagem clicavel que pergunta o nome
+do jogador e como ele quer ser ajudado, e cada fragmento recuperado conta uma parte da historia do
+Farol de Aurora.
+
 Na versao 3.1.0 o jogo ficou mais interativo e mais didatico: Echo comenta as acoes do
 jogador em tempo real (cristal aceso, raio passando perto, "quente ou frio", cor errada,
 muitos giros sem progresso), o guia de angulos mostra a normal e os angulos de incidencia e
