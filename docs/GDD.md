@@ -282,6 +282,14 @@ que pulsa ao recebê-lo. A seleção de fases virou o **Farol de Aurora** da his
 código, com janelas que acendem e uma lanterna cujos feixes crescem com os fragmentos. Os botões
 crescem e brilham ao passar o mouse, e conquistas aparecem com um troféu desenhado.
 
+Também na versão 3.3, **cada sala tem a sua cor** (`scripts/temas.gd`), acompanhando a descida pelo
+farol: azul frio (fases 1–3), violeta (4–5), âmbar (6–7), verde-azulado (8–9) e dourado (10). Os
+tons são escuros para não se confundirem com o vermelho, o verde e o azul da luz. Ao entrar na fase,
+o emissor dá um pulso de carga e o raio **nasce** e cresce até o fim do caminho; a poeira do fundo
+brilha na cor do trecho de luz que passa perto. Entre as fases há uma **íris de luz** que fecha e abre
+a partir do centro, o raio do menu acompanha o mouse e os fragmentos recuperados giram em volta do
+prisma. O jogo ganhou ícone e tela de abertura próprios (prisma com o espectro, fundo `#03050A`).
+
 ![Conquista na vitória](img/vitoria_conquista.png)
 
 ## 12. Áudio
@@ -301,7 +309,8 @@ crescem e brilham ao passar o mouse, e conquistas aparecem com um troféu desenh
 - **Ajuda em camadas:** tutorial visual, dicas em dois níveis, Echo que reage às ações e caixa de informação em cada peça.
 - Interface que escala para qualquer resolução e modo de tela cheia.
 - **Reduzir efeitos (versão 3.3):** opção em *Opções* que desliga tremor de câmera, *flash* branco,
-  câmera lenta e zoom, para quem sente desconforto com esses efeitos. Fica salva com as outras opções.
+  câmera lenta e zoom, para quem sente desconforto com esses efeitos. Também troca a íris por um *fade*
+  suave e deixa o raio, a poeira e o menu sem animações fortes. Fica salva com as outras opções.
 - **Menos texto de uma vez:** a linha de atalhos mostra só o que o jogador já aprendeu (fase 1: clicar,
   girar e dica; fase 2: trocar e desfazer; depois Echo, ângulos e música), e o balão do Echo procura um
   canto que não cubra as peças nem o raio.

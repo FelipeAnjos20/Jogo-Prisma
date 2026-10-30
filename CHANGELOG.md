@@ -25,8 +25,17 @@ matematica do feixe e as solucoes nao mudaram.
 - Selecao de fases como o Farol de Aurora: as 10 fases sao andares que acendem conforme sao
   concluidos; a lanterna no topo brilha mais a cada fragmento. Setas escolhem e Enter joga.
 - Sala que toca: clicar num espaco vazio solta uma onda de luz e toca uma nota da escala.
-- Opcao "Reduzir efeitos" (acessibilidade): sem tremor de camera, flash, camera lenta e zoom.
-- Testes: 119 verificacoes (conquistas, recompensas, atalhos por fase e nota da sala).
+- Nascimento do raio: o emissor da um pulso de carga e a luz cresce ate o fim do caminho em 0,6 s.
+- Cada sala com a sua cor (`scripts/temas.gd`): azul frio (1-3), violeta (4-5), ambar (6-7),
+  verde-azulado (8-9) e dourado (10). A poeira do fundo brilha na cor do raio que passa perto.
+- Transicao em iris de luz entre fases e cenas (shader compativel com GL Compatibility).
+- Menu que reage ao mouse: o raio de entrada acompanha o ponteiro e os fragmentos recuperados
+  giram em volta do prisma.
+- Icone proprio (prisma com o espectro) no jogo, no `.exe` e na tela de abertura.
+- Opcao "Reduzir efeitos" (acessibilidade): sem tremor de camera, flash, camera lenta e zoom; a
+  iris vira um fade suave e o raio, a poeira e o menu ficam sem animacoes fortes.
+- Testes: 165 verificacoes (conquistas, recompensas, atalhos por fase, nota da sala, temas das
+  salas, recorte do feixe, poeira e movimento do menu).
 
 ### Alterado
 

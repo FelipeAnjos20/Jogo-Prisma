@@ -221,7 +221,15 @@ As regras e as soluções das fases continuam as mesmas: a versão 3.3 mexe só 
   esquerda, aguda à direita).
 - **Menos texto na tela.** O balão do Echo procura um canto livre, os atalhos aparecem aos poucos e os
   cristais da barra superior viram gemas que acendem. Os botões crescem e brilham ao passar o mouse.
-- **Reduzir efeitos.** Em *Opções* dá para desligar tremor, flash, câmera lenta e zoom.
+- **Cada sala com a sua cor.** O raio **nasce** do emissor ao entrar na fase, e cada grupo de salas tem o
+  seu tom: azul frio (1–3), violeta (4–5), âmbar (6–7), verde-azulado (8–9) e dourado (10). A poeira do
+  fundo brilha na cor da luz quando o raio passa perto dela.
+- **Transição em íris de luz** entre as fases, menu que reage ao mouse (com os fragmentos recuperados
+  girando em volta do prisma) e **ícone e tela de abertura próprios**.
+- **Reduzir efeitos.** Em *Opções* dá para desligar tremor, flash, câmera lenta, zoom e animações fortes
+  (a íris vira um *fade* suave e o raio aparece pronto).
+
+![Sala dourada da fase 10, com o fragmento voando na vitória](docs/img/sala_dourada_vitoria.png)
 
 ![Prévia da luz no próximo giro](docs/img/previa_luz.png)
 
@@ -306,7 +314,7 @@ desfazer (`Z`) e reiniciar (`R`). O desafio está em resolver com **poucas rota�
 - O executável pronto é só para **Windows**. Em Linux e macOS o projeto roda pelo editor do Godot, mas
   não foi testado nesses sistemas nem há build exportada para eles.
 - O executável **não tem assinatura digital**, então o Windows SmartScreen mostra um aviso na
-  primeira execução. O ícone do `.exe` ainda é o padrão do Godot.
+  primeira execução.
 - O **painel de vitória cobre o centro da sala**. O jogador vê os cristais acenderem por cerca de 1 segundo
   antes de o painel aparecer.
 - O **Echo** reage a situações previstas (cristal aceso ou apagado, raio passando perto, quente ou frio,
@@ -359,7 +367,7 @@ Jogo-Prisma/
 │   └── ...                    # espelho, cristal, prisma, filtro, bloqueio, emissor, menus, arte
 ├── ui/prisma_theme.tres       # tema visual de botões e painéis
 ├── assets/audio/              # músicas do menu e das fases
-├── tests/run_tests.gd         # testes automatizados (119 verificações, incluindo as 10 fases)
+├── tests/run_tests.gd         # testes automatizados (165 verificações, incluindo as 10 fases)
 ├── tools/level_simulator/     # simulador de fases em Node.js (ignorado pelo Godot)
 ├── docs/                      # GDD, manual, vídeo, contexto, ADRs, créditos, imagens
 ├── .github/workflows/         # CI (testes) e CD (build + release por tag)
