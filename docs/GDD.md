@@ -137,6 +137,12 @@ só aparece quando o jogador usa teclado ou controle.
 - **Fragmentos:** a primeira conclusão de cada fase recupera um fragmento ("Fragmento 3 de 10 recuperado!"), que acende no prisma do menu.
 - **Recordes:** o melhor número de rotações aparece na seleção de fases; bater o recorde mostra "Novo recorde pessoal!".
 - **Tempo:** mostrado no painel de vitória (informativo, não pontua).
+- **Conquistas (versão 3.3):** 10 conquistas (`scripts/conquistas.gd`): Primeira luz, Por conta própria
+  (sem dica), Na medida (exatamente a meta), Rápido como a luz (menos de 15 s), Amigo do Echo, Curioso
+  (3 curiosidades), Cientista (abrir "Por que funcionou?"), Meio prisma, Prisma restaurado e Céu estrelado
+  (30 estrelas). Aparecem com um troféu na hora e ficam na tela "Conquistas e Echo".
+- **As estrelas viram recompensas:** cores do Echo (menta 5, rosa 10, violeta 15, dourado 22,
+  arco-íris 30) e acessórios (laço 8, chapéu de mago 16, coroa 26). O jogador escolhe no menu.
 
 ## 8. Level design
 
@@ -218,21 +224,38 @@ comentários para não poluir a tela.
 
 ![Conversa com o Echo](img/echo_conversa.png)
 
+### 9.4 Experimentar sem medo (versão 3.3)
+
+- **Prévia da luz:** com o mouse sobre um espelho, um tracejado mostra para onde a luz iria no próximo
+  giro (+15°). O cálculo usa o mesmo `Feixe.tracar()` do jogo, sem mexer no feixe de verdade. Liga e
+  desliga junto com o guia de ângulos (`G`).
+- **Echo que aponta:** na dica, Echo sai da barra superior e voa até o espelho que ainda precisa girar.
+  Na primeira dica ele só mostra *qual* espelho; na segunda, o contorno verde mostra também o ângulo.
+- **Sala que toca:** clicar num espaço vazio solta uma onda de luz e toca uma nota da escala do jogo
+  (grave à esquerda, aguda à direita). É um "brinquedo" que não interfere no puzzle.
+
+![Prévia da luz](img/previa_luz.png)
+
+![Echo voa até o espelho](img/echo_voa_dica.png)
+
 ## 10. Interface e telas
 
 | Tela | Conteúdo |
 | --- | --- |
-| Menu principal | Jogar/Continuar, Seleção de fases, Memórias do Prisma, Como jogar, Opções, Créditos, Sair; prisma animado com os fragmentos recuperados; total de estrelas |
+| Menu principal | Jogar/Continuar, Seleção de fases, Memórias do Prisma, Conquistas e Echo, Como jogar, Opções, Créditos e Sair; prisma animado com os fragmentos recuperados; total de estrelas |
+| Conquistas e Echo | Lista das 10 conquistas (ganhas e bloqueadas) e o visual do Echo: cores e acessórios liberados por estrelas |
 | Nome do jogador | Na primeira partida: Echo se apresenta e pergunta o nome (Começar / Prefiro não dizer) |
 | Memórias do Prisma | As 10 memórias da história; as bloqueadas mostram qual fase concluir |
-| Seleção de fases | 10 cartões com miniatura da sala, meta, recorde, estrelas e cadeado |
-| HUD da fase | Nome, objetivo, rotações (com cor em relação à meta), cristais acesos, botões Dica/Reiniciar/Pausa; linha de controles que muda quando o controle é usado |
+| Seleção de fases | O Farol de Aurora: 10 andares (de baixo para cima) com janela acesa, estrelas ou cadeado; lanterna que brilha com os fragmentos; cartão com miniatura grande, objetivo, meta, recorde e botão Jogar |
+| HUD da fase | Nome, objetivo, rotações (com cor em relação à meta), cristais como gemas que acendem, Echo clicável, botões Dica/Reiniciar/Pausa; linha de atalhos que cresce conforme a fase e muda quando o controle é usado |
 | Vitória | Título de fragmento, estrelas animadas, rotações, meta, tempo, recorde, comentário do Echo, memória do fragmento (1ª vez), "Por que funcionou?"; Fases / Jogar de novo / Próxima fase |
 | Pausa | Continuar, Reiniciar, Música, Seleção de fases, Menu principal |
 | Tela final | Prisma restaurado com os 10 fragmentos, agradecimento do Echo com o nome do jogador, confete, total de estrelas |
-| Opções | Volumes, tela cheia, guia de ângulos, apagar progresso; cartão "Você e o Echo" com o nome e as pistas ligadas/desligadas |
+| Opções | Volumes, tela cheia, guia de ângulos, reduzir efeitos, apagar progresso; cartão "Você e o Echo" com o nome e as pistas ligadas/desligadas |
 
-![Seleção de fases](img/selecao.png)
+![Seleção de fases como o Farol de Aurora](img/farol.png)
+
+![Conquistas e visual do Echo](img/conquistas.png)
 
 ## 11. Direção de arte
 
@@ -253,6 +276,14 @@ direção da luz. Na vitória há *flash*, um leve tremor de câmera e faíscas 
 O espelho balança ao girar, e o cristal apagado treme e brilha fraco quando o raio passa a menos de
 100 px dele ("quase lá").
 
+Na versão 3.3, a vitória ganhou um momento de cinema: câmera lenta curta (`Engine.time_scale`),
+zoom leve no último cristal aceso e um fragmento brilhante que voa em curva até o prisma do logo,
+que pulsa ao recebê-lo. A seleção de fases virou o **Farol de Aurora** da história, desenhado por
+código, com janelas que acendem e uma lanterna cujos feixes crescem com os fragmentos. Os botões
+crescem e brilham ao passar o mouse, e conquistas aparecem com um troféu desenhado.
+
+![Conquista na vitória](img/vitoria_conquista.png)
+
 ## 12. Áudio
 
 - **Música:** trilha do menu (`menu_loop.mp3`) e das fases (`gameplay_music.mp3`), em loop, com transição suave. Não reinicia ao trocar de fase.
@@ -269,12 +300,17 @@ O espelho balança ao girar, e o cristal apagado treme e brilha fraco quando o r
 - **Sem pressão de tempo:** o tempo é só informativo, o jogo pausa sozinho ao perder o foco da janela, e o desfazer é ilimitado.
 - **Ajuda em camadas:** tutorial visual, dicas em dois níveis, Echo que reage às ações e caixa de informação em cada peça.
 - Interface que escala para qualquer resolução e modo de tela cheia.
+- **Reduzir efeitos (versão 3.3):** opção em *Opções* que desliga tremor de câmera, *flash* branco,
+  câmera lenta e zoom, para quem sente desconforto com esses efeitos. Fica salva com as outras opções.
+- **Menos texto de uma vez:** a linha de atalhos mostra só o que o jogador já aprendeu (fase 1: clicar,
+  girar e dica; fase 2: trocar e desfazer; depois Echo, ângulos e música), e o balão do Echo procura um
+  canto que não cubra as peças nem o raio.
 
 ## 14. Arquitetura técnica
 
 - **Fases guiadas por dados:** `scripts/levels.gd` descreve cada fase (gerado a partir de `tools/level_simulator/levels.json`). A cena `scenes/main.tscn` cria os objetos a partir desses dados ([ADR 001](adr/001-fases-como-dados-em-script.md)).
 - **Regras puras e testáveis:** `scripts/geometria.gd` (rotação, reflexão, interseções, estrelas, ângulo de incidência, inclinação) e `scripts/feixe.gd` (caminho da luz com fila de raios para divisores e prismas). O jogo e os testes usam o mesmo código ([ADR 005](adr/005-calculo-do-feixe-puro-e-testavel.md)).
-- **Interatividade:** `scripts/echo_brain.gd` (falas do Echo, nome do jogador e modo "Deixa comigo"), `scripts/echo_face.gd` (rosto do Echo), `scripts/musica.gd` (notas e melodias), `scripts/historia.gd` (memórias dos fragmentos), `scripts/angle_guide.gd` (guia de ângulos). As reflexões usadas pelo guia e pela explicação vêm do mesmo `Feixe.tracar()`.
+- **Interatividade:** `scripts/echo_brain.gd` (falas do Echo, nome do jogador e modo "Deixa comigo"), `scripts/echo_face.gd` (rosto do Echo), `scripts/musica.gd` (notas e melodias), `scripts/historia.gd` (memórias dos fragmentos), `scripts/angle_guide.gd` (guia de ângulos), `scripts/conquistas.gd` (conquistas e recompensas, regras puras), `scripts/light_preview.gd` (prévia da luz no próximo giro) e `scripts/click_ripple.gd` (onda de luz ao clicar). As reflexões usadas pelo guia e pela explicação vêm do mesmo `Feixe.tracar()`.
 - **Autoloads:** `GameState` (progresso e salvamento em `user://prisma_save.cfg`), `Sfx` (áudio) e `Transition` (transições).
 - **Qualidade:** `tests/run_tests.gd` cobre as regras e as 10 fases; a CI roda os testes a cada push, e a CD publica a build Windows a cada tag de versão.
 

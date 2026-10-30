@@ -201,6 +201,38 @@ O PRISMA reage a cada ação do jogador:
 
 ![Memória recuperada na vitória](docs/img/memoria_fragmento.png)
 
+### Mais interativo e mais bonito (versão 3.3)
+
+As regras e as soluções das fases continuam as mesmas: a versão 3.3 mexe só no que o jogador vê e sente.
+
+- **Prévia da luz.** Passe o mouse sobre um espelho: um **tracejado** mostra para onde a luz iria no
+  próximo giro. Dá para experimentar sem medo antes de clicar (liga e desliga com `G`).
+- **O Echo voa até o espelho.** Ao pedir uma dica, Echo sai da barra superior, voa até o espelho que
+  precisa girar, fica ao lado dele e depois volta para o lugar.
+- **Vitória de cinema.** Quando o último cristal acende, a cena fica em câmera lenta por um instante,
+  a câmera se aproxima do cristal e um **fragmento brilhante voa** até o prisma no canto da tela.
+- **Conquistas.** São 10 (por exemplo "Por conta própria", "Na medida", "Cientista" e "Céu estrelado").
+  Cada uma aparece com um troféu na hora e fica guardada em **Conquistas e Echo**, no menu.
+- **As estrelas viram presentes para o Echo.** Juntando estrelas, você libera **cores** (menta, rosa,
+  violeta, dourado, arco-íris) e **acessórios** (laço, chapéu de mago, coroa) para o Echo.
+- **O Farol de Aurora.** A seleção de fases virou o farol da história: cada fase é um andar, e as janelas
+  **acendem** conforme você conclui. A lanterna no topo brilha mais a cada fragmento recuperado.
+- **A sala toca música.** Clique num espaço vazio da sala: sai uma onda de luz e uma nota (grave à
+  esquerda, aguda à direita).
+- **Menos texto na tela.** O balão do Echo procura um canto livre, os atalhos aparecem aos poucos e os
+  cristais da barra superior viram gemas que acendem. Os botões crescem e brilham ao passar o mouse.
+- **Reduzir efeitos.** Em *Opções* dá para desligar tremor, flash, câmera lenta e zoom.
+
+![Prévia da luz no próximo giro](docs/img/previa_luz.png)
+
+![Echo voa até o espelho na dica](docs/img/echo_voa_dica.png)
+
+![Seleção de fases como o Farol de Aurora](docs/img/farol.png)
+
+![Conquistas e visual do Echo](docs/img/conquistas.png)
+
+![Conquista na vitória](docs/img/vitoria_conquista.png)
+
 ## 7. Objetivo, regras, vitória e progressão
 
 ### Objetivo
@@ -243,7 +275,9 @@ desfazer (`Z`) e reiniciar (`R`). O desafio está em resolver com **poucas rota�
   da fase (o mínimo possível); ★★ até o dobro da meta; ★ ao concluir.
 - **Fragmentos:** cada fase concluída recupera um fragmento, que acende no prisma do menu. Ao
   terminar a fase 10, o Prisma de Luz é restaurado e aparece a tela final.
-- **Recordes:** o melhor número de rotações de cada fase aparece na seleção de fases.
+- **Recordes:** o melhor número de rotações de cada fase aparece na seleção de fases (o Farol de Aurora).
+- **Conquistas e visual do Echo:** 10 conquistas e, com as estrelas, novas cores e acessórios para o Echo
+  (*Conquistas e Echo*, no menu).
 - **Dicas:** `H` mostra uma pista em texto; apertando de novo, um **contorno verde** indica o
   ângulo certo de um espelho. Após 45 segundos parado, Echo lembra que a dica existe.
 - O progresso e as configurações são **salvos automaticamente**, em
@@ -325,7 +359,7 @@ Jogo-Prisma/
 │   └── ...                    # espelho, cristal, prisma, filtro, bloqueio, emissor, menus, arte
 ├── ui/prisma_theme.tres       # tema visual de botões e painéis
 ├── assets/audio/              # músicas do menu e das fases
-├── tests/run_tests.gd         # testes automatizados (103 verificações, incluindo as 10 fases)
+├── tests/run_tests.gd         # testes automatizados (119 verificações, incluindo as 10 fases)
 ├── tools/level_simulator/     # simulador de fases em Node.js (ignorado pelo Godot)
 ├── docs/                      # GDD, manual, vídeo, contexto, ADRs, créditos, imagens
 ├── .github/workflows/         # CI (testes) e CD (build + release por tag)
@@ -343,7 +377,9 @@ Jogo-Prisma/
 - regras da luz: filtro bloqueando cor errada e prisma dividindo a luz;
 - **as 10 fases**: cada uma é montada a partir dos dados e traçada com o mesmo código do jogo. O teste
   confere que a fase **não começa resolvida**, que **a solução acende todos os cristais** e que a
-  **meta de estrelas** é o mínimo de rotações.
+  **meta de estrelas** é o mínimo de rotações;
+- interatividade: notas e melodias, memórias da história, nome do jogador, modo "Deixa comigo",
+  conquistas, visual do Echo liberado por estrelas, atalhos por fase e nota da sala.
 
 ```bash
 godot --headless --editor --quit-after 60   # importa (uma vez)

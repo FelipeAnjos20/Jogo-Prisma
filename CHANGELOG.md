@@ -5,6 +5,42 @@ Todas as mudancas notaveis deste projeto serao documentadas neste arquivo.
 O formato e baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/),
 e este projeto segue o [Versionamento Semantico](https://semver.org/lang/pt-BR/).
 
+## [3.3.0] - 2026-10-30
+
+Jogo mais interativo e mais bonito, so no visual e na sensacao: as regras das fases, a
+matematica do feixe e as solucoes nao mudaram.
+
+### Adicionado
+
+- Previa da luz (`scripts/light_preview.gd`): com o mouse sobre um espelho, um tracejado mostra
+  para onde a luz vai no proximo giro. Usa o calculo puro de `feixe.gd` e liga/desliga com `G`.
+- Echo que voa: na dica, ele sai da barra superior, voa ate o espelho que precisa girar, fica
+  ao lado dele e depois volta.
+- Vitoria cinematografica: camera lenta curta, zoom leve no ultimo cristal e um fragmento
+  brilhante que voa do cristal ate o prisma do logo antes do painel de vitoria.
+- Conquistas (`scripts/conquistas.gd`): 10 conquistas, com aviso de trofeu na fase e a tela
+  "Conquistas e Echo" no menu.
+- Visual do Echo liberado por estrelas: cores (menta, rosa, violeta, dourado, arco-iris) e
+  acessorios (laco, chapeu de mago, coroa).
+- Selecao de fases como o Farol de Aurora: as 10 fases sao andares que acendem conforme sao
+  concluidos; a lanterna no topo brilha mais a cada fragmento. Setas escolhem e Enter joga.
+- Sala que toca: clicar num espaco vazio solta uma onda de luz e toca uma nota da escala.
+- Opcao "Reduzir efeitos" (acessibilidade): sem tremor de camera, flash, camera lenta e zoom.
+- Testes: 119 verificacoes (conquistas, recompensas, atalhos por fase e nota da sala).
+
+### Alterado
+
+- Balao do Echo mais estreito e posicionado longe das pecas, do espelho selecionado e do raio.
+- Atalhos da barra inferior aparecem aos poucos, conforme a fase.
+- Cristais da barra superior viram gemas que acendem; objetivo longo quebra em duas linhas.
+- Botoes crescem e brilham ao passar o mouse.
+- Menu: "Creditos" e "Sair" dividem a ultima linha para caber "Conquistas e Echo".
+
+### Corrigido
+
+- Texto "Bloqueada" sobreposto ao nome da fase na selecao de fases.
+- Barra superior que saia da tela no Windows quando o objetivo da fase era longo.
+
 ## [3.2.0] - 2026-10-30
 
 Jogo mais interativo com o jogador: a luz vira musica, o Echo vira personagem e os

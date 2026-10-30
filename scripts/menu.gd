@@ -364,7 +364,7 @@ func _build_achievements_panel() -> void:
 	_achievements_count = UI.make_label("", 20, UI.ACCENT, 800)
 	header.add_child(_achievements_count)
 	var scroll := ScrollContainer.new()
-	scroll.custom_minimum_size = Vector2(404, 290)
+	scroll.custom_minimum_size = Vector2(404, 260)
 	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	list_inner.add_child(scroll)
 	_achievements_list = VBoxContainer.new()
@@ -376,7 +376,7 @@ func _build_achievements_panel() -> void:
 	look_card.custom_minimum_size.x = 400
 	cards.add_child(look_card)
 	var look_inner := VBoxContainer.new()
-	look_inner.add_theme_constant_override("separation", 6)
+	look_inner.add_theme_constant_override("separation", 4)
 	look_card.add_child(look_inner)
 	var look_header := HBoxContainer.new()
 	look_inner.add_child(look_header)
@@ -386,7 +386,7 @@ func _build_achievements_panel() -> void:
 	_look_preview = EchoFace.new(24.0)
 	_look_preview.mood = "happy"
 	# Espaco extra em cima para o chapeu ou a coroa.
-	_look_preview.custom_minimum_size.y += 30.0
+	_look_preview.custom_minimum_size.y += 14.0
 	look_header.add_child(_look_preview)
 	_look_grid = VBoxContainer.new()
 	_look_grid.add_theme_constant_override("separation", 6)
@@ -586,7 +586,7 @@ func _build_footer() -> void:
 	_progress_label.position = Vector2(88, 672)
 	hud.add_child(_progress_label)
 
-	var version := UI.make_label("F11: tela cheia   ·   v3.2", 13, UI.TEXT_DIM, 500)
+	var version := UI.make_label("F11: tela cheia   ·   v3.3", 13, UI.TEXT_DIM, 500)
 	version.position = Vector2(1060, 690)
 	hud.add_child(version)
 
