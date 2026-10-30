@@ -46,6 +46,7 @@ var _banner_title: Label
 var _banner_name: Label
 
 var _flash: ColorRect
+var _logo: PrismLogo
 
 var _victory_root: Control
 var _victory_card: PanelContainer
@@ -334,9 +335,30 @@ func _process(delta: float) -> void:
 
 
 func flash(strength := 0.55) -> void:
+	if GameState.reduce_effects:
+		return
 	_flash.color.a = strength
 	var tween := create_tween()
 	tween.tween_property(_flash, "color:a", 0.0, 0.6).set_ease(Tween.EASE_OUT)
+
+
+# Vitoria: um fragmento brilhante sai do ultimo cristal (posicao na tela) e voa ate o
+# logo do prisma no canto. Retorna o tempo do voo, para o painel esperar.
+func fly_fragment(from: Vector2, color: Color) -> float:
+	var flight := 0.8
+	var shard := FragmentFly.new()
+	shard.color = color
+	shard.start = from
+	shard.target = _logo.get_global_rect().get_center()
+	add_child(shard)
+	var tween := shard.create_tween()
+	tween.tween_property(shard, "progress", 1.0, flight).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
+	tween.tween_callback(func() -> void:
+		_logo.pulse()
+		Sfx.play("select", 1.5)
+		shard.queue_free()
+	)
+	return flight
 
 
 func show_victory(result: Dictionary, rotations: int, par: int, is_last: bool, seconds: float, echo_comment := "", explanation := "", story_index := -1) -> void:
@@ -436,8 +458,8 @@ func _build_top_bar() -> void:
 	row.add_theme_constant_override("separation", 22)
 	bar.add_child(row)
 
-	var logo := PrismLogo.new()
-	row.add_child(logo)
+	_logo = PrismLogo.new()
+	row.add_child(_logo)
 
 	var info := VBoxContainer.new()
 	info.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -863,19 +885,59 @@ class GemRow extends Control:
 			draw_polyline(points, Color(0.75, 1.0, 0.85) if on else Color(0.4, 0.5, 0.65), 1.2, true)
 
 
+# Fragmento do prisma voando do cristal ate o logo, em curva, deixando um rastro.
+class FragmentFly extends Node2D:
+	var start := Vector2.ZERO
+	var target := Vector2.ZERO
+	var color := Color.WHITE
+	var progress := 0.0:
+		set(value):
+			progress = value
+			queue_redraw()
+
+	func _point(t: float) -> Vector2:
+		# Curva para cima, como uma faisca subindo.
+		var control := start.lerp(target, 0.5) + Vector2(0, -160)
+		return start.lerp(control, t).lerp(control.lerp(target, t), t)
+
+	func _draw() -> void:
+		for i in range(10):
+			var t := maxf(0.0, progress - i * 0.025)
+			var fade := 1.0 - i / 10.0
+			draw_circle(_point(t), 10.0 * fade, Color(color.r, color.g, color.b, 0.18 * fade))
+		var head := _point(progress)
+		var spin := progress * TAU * 1.5
+		var k := 1.0 + sin(progress * PI) * 0.6
+		var points := PackedVector2Array()
+		for corner in [Vector2(0, -11), Vector2(7, 0), Vector2(0, 11), Vector2(-7, 0)]:
+			points.append(head + corner.rotated(spin) * k)
+		draw_circle(head, 20.0 * k, Color(color.r, color.g, color.b, 0.22))
+		draw_colored_polygon(points, color.lerp(Color.WHITE, 0.45))
+		points.append(points[0])
+		draw_polyline(points, Color.WHITE, 1.5, true)
+
+
 class PrismLogo extends Control:
 	var _time := 0.0
+	var _pulse := 0.0
 
 	func _init() -> void:
 		custom_minimum_size = Vector2(56, 60)
 		mouse_filter = Control.MOUSE_FILTER_IGNORE
 
+	# O fragmento chegou: o prisma do logo brilha.
+	func pulse() -> void:
+		_pulse = 1.0
+
 	func _process(delta: float) -> void:
 		_time += delta
+		_pulse = maxf(0.0, _pulse - delta * 1.5)
 		queue_redraw()
 
 	func _draw() -> void:
 		var c := size * 0.5
+		if _pulse > 0.0:
+			draw_circle(c, 30.0 + 14.0 * (1.0 - _pulse), Color(1.0, 0.95, 0.7, 0.35 * _pulse))
 		var top := c + Vector2(0, -22)
 		var right := c + Vector2(22, 17)
 		var left := c + Vector2(-22, 17)

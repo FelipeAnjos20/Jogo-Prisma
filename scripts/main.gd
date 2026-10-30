@@ -42,6 +42,10 @@ const TOAST_ANCHORS := [
 	Vector2(360, 96), Vector2(56, 104), Vector2(664, 104),
 	Vector2(360, 590), Vector2(56, 590), Vector2(664, 590),
 ]
+# Vitoria cinematografica (desligada em "Reduzir efeitos").
+const SLOWMO_SCALE := 0.3
+const SLOWMO_TIME := 0.35
+const VICTORY_ZOOM := 1.08
 # A cada tantos pixels do raio, um ponto conta como "coberto" pelo balao.
 const TOAST_BEAM_STEP := 40.0
 
@@ -93,6 +97,8 @@ var _idle_hint_given := false
 var _locked_tip_given := false
 var _load_token := 0
 var _tutorial: Node2D = null
+var _last_lit_crystal: Node2D = null
+var _camera_tween: Tween
 
 # Echo que conversa e reage
 var _echo := EchoBrain.new()
@@ -150,6 +156,7 @@ func _ready() -> void:
 
 func _exit_tree() -> void:
 	Input.set_default_cursor_shape(Input.CURSOR_ARROW)
+	Engine.time_scale = 1.0
 
 
 func _notification(what: int) -> void:
@@ -195,6 +202,8 @@ func _load_level(index: int) -> void:
 	_hover_time = 0.0
 	_last_input = _now()
 	_wake_said = false
+	_last_lit_crystal = null
+	_reset_camera()
 	get_tree().paused = false
 	hud.hide_choice()
 	hud.set_buddy_sleepy(false)
@@ -353,6 +362,8 @@ func _process(delta: float) -> void:
 				changed = true
 				turned_on = turned_on or on
 				turned_off = turned_off or not on
+				if on:
+					_last_lit_crystal = crystals[i]
 				if not completed and not on:
 					Sfx.play("crystal_off", 1.0 + 0.1 * i)
 		if turned_on and not completed:
@@ -740,20 +751,58 @@ func _complete_level() -> void:
 	_victory_reflections = explanation_reflections
 	hud.hide_tooltip()
 	hud.hide_choice()
-	_shake = 1.0
+	var calm := GameState.reduce_effects
+	if not calm:
+		_shake = 1.0
 	hud.flash(0.5)
 	hud.hide_toast()
 	beam.celebrate()
 	# Cada fase termina com a sua melodia (ver scripts/musica.gd).
-	get_tree().create_timer(0.25).timeout.connect(Sfx.play_melody.bind("win_%d" % level_index, Musica.melodia_da_fase(level_index)))
+	_real_timer(0.25).timeout.connect(Sfx.play_melody.bind("win_%d" % level_index, Musica.melodia_da_fase(level_index)))
 
-	await get_tree().create_timer(1.0).timeout
+	# Vitoria cinematografica: camera lenta curta e zoom no ultimo cristal aceso.
+	var focus: Node2D = _last_lit_crystal if _last_lit_crystal != null else crystals.back()
+	if not calm:
+		Engine.time_scale = SLOWMO_SCALE
+		_zoom_camera(focus.global_position, VICTORY_ZOOM, SLOWMO_TIME)
+	await _real_timer(SLOWMO_TIME).timeout
+	if token != _load_token:
+		return
+	Engine.time_scale = 1.0
+	_zoom_camera(focus.global_position, 1.0, 0.45)
+
+	# O fragmento voa do cristal ate o prisma do logo antes do painel aparecer.
+	var flight: float = hud.fly_fragment(focus.get_global_transform_with_canvas().origin, UI.light_color(focus.required_color))
+	await _real_timer(flight + 0.2).timeout
 	if token != _load_token:
 		return
 	var comment: String = _echo.victory_comment(int(result["stars"]), rotation_count, int(level["par"]), _hint_used, bool(result["record"]), _level_time)
 	# Na primeira vez que a fase e concluida, o fragmento devolve uma memoria da historia.
 	var story_index := level_index if bool(result.get("first_clear", false)) else -1
 	hud.show_victory(result, rotation_count, int(level["par"]), is_last, _level_time, comment, _build_explanation(), story_index)
+
+
+# Timer em tempo real: nao fica mais lento com Engine.time_scale.
+func _real_timer(seconds: float) -> SceneTreeTimer:
+	return get_tree().create_timer(seconds, true, false, true)
+
+
+# Zoom que mantem o ponto (ex.: o cristal) parado na tela. A camera usa o canto como ancora.
+func _zoom_camera(focus: Vector2, zoom_value: float, duration: float) -> void:
+	if _camera_tween != null:
+		_camera_tween.kill()
+	var target_position := focus - focus / zoom_value
+	_camera_tween = create_tween().set_parallel(true).set_ignore_time_scale(true)
+	_camera_tween.tween_property(camera, "zoom", Vector2.ONE * zoom_value, duration).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
+	_camera_tween.tween_property(camera, "position", target_position, duration).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
+
+
+func _reset_camera() -> void:
+	Engine.time_scale = 1.0
+	if _camera_tween != null:
+		_camera_tween.kill()
+	camera.zoom = Vector2.ONE
+	camera.position = Vector2.ZERO
 
 
 func _advance() -> void:
@@ -777,6 +826,7 @@ func _pause() -> void:
 	if Transition.is_busy():
 		return
 	_drag_mirror = null
+	Engine.time_scale = 1.0
 	get_tree().paused = true
 	hud.show_pause(true)
 	Sfx.play("click")
