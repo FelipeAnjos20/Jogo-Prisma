@@ -43,3 +43,17 @@ existentes (multiplos de 15: 30, 45, 60 graus).
 - Qualquer mudanca futura no tamanho do passo deve continuar sendo feita via
   `Geometria.proximo_angulo()`, para manter a regra coberta pelos testes em
   `tests/run_tests.gd`.
+
+## Atualizacao (versao 3.0.0)
+
+- A regra continua em `Geometria.proximo_angulo()` e e usada por
+  `scripts/mirror.gd`. O angulo alvo do espelho fica sempre normalizado em
+  [0, 360), e a animacao de giro segue o menor caminho (de 345 para 0 graus
+  anda so 15 graus).
+- Foram adicionadas novas formas de girar: arrastar a ponta do espelho com o
+  mouse, roda do mouse, clique direito e controle. **Todas convertem o movimento
+  em passos de 15 graus**, entao a decisao de rotacao discreta foi mantida. O
+  arrastar acumula o angulo girado pelo mouse e aplica o numero de passos de
+  15 graus mais proximo dele.
+- O passo de 15 graus faz com que os raios sempre sigam direcoes multiplas de
+  30 graus, o que tambem foi usado para definir a abertura do prisma (30 graus).

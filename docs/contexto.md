@@ -17,20 +17,29 @@ acertar o alvo — e o core loop do jogo, e permanece o mesmo em todas as fases.
 
 ## Estado atual do projeto
 
-O prototipo atual contem tres fases jogaveis, com dificuldade crescente:
+A versao atual (3.0.0) tem **10 fases** com dificuldade crescente. Cada fase apresenta
+um conceito novo e a seguinte o combina com os anteriores:
 
-1. **Fase 1 - Reflexao basica**: apresenta o mecanismo de espelhos com o
-   arranjo mais simples possivel, usando dois espelhos moveis.
-2. **Fase 2 - Desvio com obstaculo**: introduz obstaculos que bloqueiam o
-   feixe, exigindo que o jogador planeje um caminho mais indireto com tres
-   espelhos.
-3. **Fase 3 - Espelho fixo e simetria**: combina quatro espelhos, um deles
-   fixo (nao giravel), incentivando o jogador a raciocinar sobre simetria e
-   angulos complementares.
+1. **Primeiro reflexo** — um espelho a 45 graus (com tutorial visual).
+2. **Dois espelhos** — encadear reflexoes.
+3. **Desvio** — bloqueios absorvem a luz.
+4. **Espelho fixo** — usar um espelho que nao gira.
+5. **Divisor de luz** — um raio vira dois; dois cristais.
+6. **Filtro vermelho** — cristal que exige cor.
+7. **Duas cores** — filtro bloqueia luz de outra cor.
+8. **Tres cristais** — dividir, colorir e dividir de novo.
+9. **Dispersao** — o prisma separa a luz branca em vermelho, verde e azul.
+10. **O Prisma** — desafio final combinando prisma, divisor e filtro.
 
-As fases sao descritas como dados dentro de `scripts/main.gd` (ver
-[ADR 001](adr/001-fases-como-dados-em-script.md)), o que permite ajustar ou
-adicionar fases sem criar novas cenas.
+Alem das fases, o jogo tem estrelas por meta de rotacoes, fragmentos do Prisma de
+Luz como progressao narrativa, assistente Echo com dicas em dois niveis, salvamento
+automatico, selecao de fases, suporte a teclado, mouse e controle, e acessibilidade
+para daltonismo (cada cor tambem tem uma forma).
+
+As fases sao descritas como dados em `scripts/levels.gd` (ver
+[ADR 001](adr/001-fases-como-dados-em-script.md)) e validadas automaticamente pelos
+testes (ver [ADR 005](adr/005-calculo-do-feixe-puro-e-testavel.md)).
+O game design completo esta no [GDD](GDD.md).
 
 ## Publico e proposito
 
@@ -43,12 +52,11 @@ o angulo de um espelho e a trajetoria resultante da luz.
 ## Escopo tecnico
 
 - Engine: Godot 4.6 (perfil de compatibilidade `GL Compatibility`).
-- Toda a geometria de colisao/desenho dos espelhos, obstaculos e do feixe e
-  calculada em GDScript (`scripts/light_beam.gd`, `scripts/mirror.gd`,
-  `scripts/obstacle.gd`, `scripts/crystal.gd`), sem depender de fisica de
-  particulas de luz da engine.
-- A logica de rotacao de angulo foi isolada em `scripts/geometria.gd` para
-  poder ser testada de forma automatizada (ver `tests/run_tests.gd`).
+- Toda a geometria do feixe e calculada em GDScript, sem usar a fisica da engine:
+  as regras ficam em `scripts/geometria.gd` e `scripts/feixe.gd` (codigo puro) e
+  `scripts/light_beam.gd` apenas desenha o resultado.
+- As regras geometricas e as 10 fases sao testadas de forma automatizada em
+  `tests/run_tests.gd`.
 - Integracao continua roda os testes automatizados a cada push/PR na `main`
   (`.github/workflows/ci.yml`); a publicacao de builds ocorre ao criar uma tag
   de versao (`.github/workflows/cd.yml`).
@@ -57,5 +65,6 @@ o angulo de um espelho e a trajetoria resultante da luz.
 
 - [Registros de decisao de arquitetura (ADRs)](adr/)
 - [Creditos](creditos.md)
-- [README do prototipo original](../README_PROTOTIPO.md)
+- [GDD](GDD.md)
+- [README do prototipo original (PAC III)](Prototipo_PAC_III_README.md)
 - [CHANGELOG](../CHANGELOG.md)

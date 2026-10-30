@@ -38,3 +38,18 @@ fase.
 - Se o numero de fases crescer significativamente, uma cena por fase (como
   cogitado em `README_PROTOTIPO.md`, em `scenes/levels/level_01.tscn`) volta a
   ser uma opcao valida a reavaliar.
+
+## Atualizacao (versao 3.0.0)
+
+A decisao de manter fases como dados foi mantida e ampliada:
+
+- Os dados das fases sairam de `scripts/main.gd` e foram para `scripts/levels.gd`,
+  gerado a partir de `tools/level_simulator/levels.json` pelo simulador, que
+  tambem calcula a meta de estrelas e a solucao usada pela dica.
+- `scenes/main.tscn` nao tem mais espelhos e obstaculos pre-alocados: `main.gd`
+  cria os objetos (espelhos, divisores, filtros, prismas, cristais e bloqueios)
+  por codigo a partir dos dados. O limite de 4 espelhos e 2 obstaculos deixou de
+  existir.
+- O jogo passou de 3 para 10 fases sem criar nenhuma cena nova, o que confirma
+  a escolha. A edicao continua menos visual que uma cena por fase; o simulador
+  gera uma imagem SVG das fases resolvidas para compensar.

@@ -1,87 +1,298 @@
-# PRISMA
+# PRISMA — O lugar onde a luz quebrou
 
-Jogo serio de puzzle geometrico em Godot 4.6 — ensina angulo, reflexao e
-simetria atraves de um mecanismo de espelhos giratorios e um feixe de luz.
+[![CI](https://github.com/FelipeAnjos20/Jogo-Prisma/actions/workflows/ci.yml/badge.svg)](https://github.com/FelipeAnjos20/Jogo-Prisma/actions/workflows/ci.yml)
 
-O jogador observa a posicao do emissor, dos espelhos e do cristal receptor,
-seleciona espelhos, gira-os em passos fixos de 15 graus e acompanha em tempo
-real a mudanca no caminho do feixe, ate acerta-lo no cristal.
+Jogo sério de puzzle 2D feito em **Godot 4.6**. O jogador gira espelhos e usa divisores, filtros de
+cor e prismas para guiar um raio de luz até os cristais de cada sala. A proposta é tornar
+tangíveis os conceitos de **ângulo, reflexão, simetria e decomposição da luz**: cada giro tem um
+efeito imediato e visível no caminho do feixe.
 
-Para o contexto completo do projeto, veja [docs/contexto.md](docs/contexto.md).
+A cada sala concluída o jogador recupera um dos **10 fragmentos do Prisma de Luz**, guiado pelo
+assistente **Echo**.
 
-## Como rodar
+![Menu principal](docs/img/menu.png)
 
-1. Abra o projeto no Godot 4.6 (ou compativel).
-2. Rode o projeto com `F5`, ou abra `scenes/main.tscn` e rode a cena com `F6`.
+> **Projeto acadêmico** — PAC Extensionista III, Engenharia de Software, Católica de Santa Catarina.
+> Equipe: Eduardo Macedo, Felipe dos Anjos, Felipe Schwabe e Vinicius Mesquita.
 
-## Controles
+## Sumário
 
-| Tecla / acao         | Efeito                                             |
-|-----------------------|-----------------------------------------------------|
-| Clique esquerdo        | Seleciona o espelho clicado                         |
-| `1` a `4`              | Seleciona o espelho correspondente                  |
-| `Tab`                  | Alterna para o proximo espelho giravel disponivel   |
-| `Q`                    | Gira o espelho selecionado no sentido anti-horario  |
-| `E`                    | Gira o espelho selecionado no sentido horario       |
-| `R`                    | Reinicia a fase atual                                |
-| `N`                    | Avanca para a proxima fase (apos ativar o cristal)  |
-| `M`                    | Liga/desliga a musica                                |
-| `Esc`                  | Volta para o menu principal                          |
+1. [Jogar agora (executável pronto)](#1-jogar-agora-executável-pronto)
+2. [Requisitos](#2-requisitos)
+3. [Baixar ou clonar o projeto](#3-baixar-ou-clonar-o-projeto)
+4. [Instalar dependências e configurar o ambiente](#4-instalar-dependências-e-configurar-o-ambiente)
+5. [Executar o jogo pelo Godot](#5-executar-o-jogo-pelo-godot)
+6. [Como jogar: iniciar uma partida e controles](#6-como-jogar-iniciar-uma-partida-e-controles)
+7. [Objetivo, regras, vitória e progressão](#7-objetivo-regras-vitória-e-progressão)
+8. [Limitações conhecidas e o que ainda não foi implementado](#8-limitações-conhecidas-e-o-que-ainda-não-foi-implementado)
+9. [GDD e documentação](#9-gdd-e-documentação)
+10. [Estrutura do repositório](#10-estrutura-do-repositório)
+11. [Testes, CI e releases](#11-testes-ci-e-releases)
+12. [Créditos](#12-créditos)
 
-No menu principal, o painel de opcoes permite ajustar o volume e ligar/desligar
-o som pelo mouse.
+---
 
-## Estrutura do repositorio
+## 1. Jogar agora (executável pronto)
 
-```
-prisma-project/
-├── project.godot              # Configuracao do projeto Godot
-├── export_presets.cfg         # Presets de exportacao (ex.: Windows Desktop)
-├── icon.svg / icon.svg.import # Icone do projeto
-├── scenes/                    # Cenas jogaveis (menu, fase principal, tela de conclusao)
-├── scripts/                   # Logica em GDScript de cada objeto/cena
-│   └── geometria.gd           # Regras geometricas puras (rotacao de espelho), cobertas por testes
-├── assets/                    # Assets do jogo (audio)
-├── ui/                        # Reservado para temas, fontes e elementos de interface futuros
-├── tests/
-│   └── run_tests.gd           # Testes automatizados (godot --headless --script res://tests/run_tests.gd)
-├── docs/
-│   ├── contexto.md            # Contexto e escopo do projeto
-│   ├── creditos.md            # Creditos de desenvolvimento, ferramentas e audio
-│   └── adr/                   # Registros de decisao de arquitetura (ADRs)
-├── .github/
-│   └── workflows/
-│       ├── ci.yml             # Roda os testes automatizados a cada push/PR na main
-│       └── cd.yml             # Publica uma build/release a cada tag vMAJOR.MINOR.PATCH
-├── README_PROTOTIPO.md         # Notas originais do prototipo (referencia historica)
-└── CHANGELOG.md                # Historico de mudancas do projeto
-```
+Para só jogar, sem instalar nada:
 
-## Testes
+1. Abra a página de **[Releases](https://github.com/FelipeAnjos20/Jogo-Prisma/releases/latest)** e
+   baixe o arquivo `Prisma-windows-vX.Y.Z.zip`.
+2. Extraia o zip em uma pasta.
+3. Dê dois cliques em **`Prisma.exe`**. O arquivo `Prisma.pck` precisa continuar na mesma pasta.
 
-Os testes automatizados cobrem as regras geometricas isoladas em
-`scripts/geometria.gd`. Para rodar localmente com o Godot instalado:
+> Na primeira execução o Windows pode mostrar *"O Windows protegeu o computador"*. O executável
+> não tem assinatura digital paga, então clique em **Mais informações → Executar assim mesmo**.
+
+Para abrir o código-fonte e rodar pelo motor, siga os passos 2 a 5.
+
+## 2. Requisitos
+
+| Item | Requisito |
+| --- | --- |
+| Sistema operacional | **Windows 10 ou 11 (64 bits)** para o executável pronto. O projeto também abre no Linux e no macOS pelo editor do Godot. |
+| Placa de vídeo | Compatível com **OpenGL 3.3**, o que inclui vídeo integrado Intel e AMD dos últimos ~10 anos. O jogo usa o renderizador *Compatibility*. |
+| Memória e disco | 4 GB de RAM e cerca de 400 MB livres (Godot + projeto + cache). |
+| Engine | **Godot Engine 4.6**, versão **Standard** (não a .NET). Testado com **4.6.3**, a mesma versão usada pela CI. |
+| Git (opcional) | Qualquer versão recente, para clonar o repositório. |
+| Node.js (opcional) | 18+, só para a ferramenta de validação de fases em `tools/level_simulator`. |
+
+Não há plugins, bibliotecas ou pacotes de assets externos. A arte é desenhada por código, os
+efeitos sonoros são sintetizados pelo próprio jogo e as músicas já estão em `assets/audio/`.
+
+## 3. Baixar ou clonar o projeto
+
+**Com Git:**
 
 ```bash
+git clone https://github.com/FelipeAnjos20/Jogo-Prisma.git
+cd Jogo-Prisma
+```
+
+**Sem Git:** na página do repositório, clique em **Code → Download ZIP** e extraia o arquivo. Prefira
+um caminho curto, como `C:\Jogo-Prisma`.
+
+## 4. Instalar dependências e configurar o ambiente
+
+A única dependência é o Godot:
+
+1. Baixe o **Godot 4.6.3 Standard** para o seu sistema em
+   <https://godotengine.org/download/archive/4.6.3-stable/>. No Windows, o arquivo é
+   `Godot_v4.6.3-stable_win64.exe.zip`.
+2. Extraia o zip. O Godot **não tem instalador**: é um único executável.
+
+Não é necessário configurar mais nada. As configurações do projeto já estão no repositório:
+cena inicial, resolução 1280×720 com escala automática, tema da interface e *autoloads*
+(`GameState`, `Sfx`, `Transition`).
+
+## 5. Executar o jogo pelo Godot
+
+**Pelo editor:**
+
+1. Abra o Godot. Vai aparecer o **Gerenciador de Projetos**.
+2. Clique em **Importar**, selecione o arquivo **`project.godot`** na pasta do repositório e confirme
+   em **Importar e Editar**.
+3. Aguarde a primeira importação (5 a 20 segundos). Ela cria a pasta `.godot/`, que é cache e não vai
+   para o Git.
+4. Aperte **F5** (ou o botão ▶ no canto superior direito). O jogo abre no menu principal
+   (`scenes/menu.tscn`).
+
+**Pela linha de comando** (sem abrir o editor), dentro da pasta do repositório:
+
+```bash
+# importa os recursos uma vez (cria a pasta .godot/)
+godot --headless --editor --quit-after 60
+# executa o jogo
+godot --path .
+```
+
+> No Windows, troque `godot` pelo caminho do executável, por exemplo
+> `C:\Godot\Godot_v4.6.3-stable_win64.exe --path .`
+
+**Para gerar um executável:** no editor, use *Editor → Gerenciar Modelos de Exportação → Baixar e
+Instalar* (uma vez) e depois *Projeto → Exportar → Windows Desktop → Exportar Projeto*. A saída
+padrão é `build/windows/Prisma.exe`, e essa pasta é ignorada pelo Git.
+
+O manual completo, com checklist de conferência e solução de problemas, está em
+[docs/Manual_de_Reconstrucao.pdf](docs/Manual_de_Reconstrucao.pdf).
+
+## 6. Como jogar: iniciar uma partida e controles
+
+### Iniciando uma partida
+
+1. No menu principal, clique em **Jogar** (ou **Continuar**, se já houver progresso). Você também pode
+   escolher qualquer fase liberada em **Seleção de fases**.
+2. A **fase 1 tem um tutorial**: uma seta animada mostra qual espelho girar, e o assistente Echo
+   explica a mecânica. Em cada fase nova, Echo apresenta o elemento novo.
+3. Em **Como jogar**, no menu, há um resumo dos controles e dos elementos. Em **Opções** ficam o
+   volume da música e dos efeitos e a tela cheia.
+
+![Fase 1 com tutorial](docs/img/fase1_tutorial.png)
+
+### Controles
+
+| Ação | Teclado e mouse | Controle (Xbox/PS) |
+| --- | --- | --- |
+| Selecionar um espelho | Clique no espelho, teclas `1`–`9`, `Tab` / `Shift+Tab` | LB / RB |
+| Girar o espelho selecionado (15° por passo) | Arrastar a ponta do espelho, `Q` / `E` (também `A`/`D` e ←/→), roda do mouse, clicar de novo no espelho (horário), clique direito (anti-horário) | Direcional ◀ ▶, A |
+| Desfazer o último giro | `Z` | B |
+| Pedir dica ao Echo | `H` (a 2ª vez mostra o ângulo certo de um espelho) | Y |
+| Reiniciar a fase | `R` | X |
+| Pausar (continuar, reiniciar, música, fases, menu) | `Esc` ou `P` | Start |
+| Ir para a próxima fase (após vencer) | `N`, `Enter` ou `Espaço` | A |
+| Ligar/desligar a música | `M` | Select |
+| Tela cheia | `F11` ou `Alt+Enter` | — |
+
+Os menus também podem ser usados com as setas + `Enter` ou com o controle.
+
+## 7. Objetivo, regras, vitória e progressão
+
+### Objetivo
+
+Levar a luz do **emissor** até **todos os cristais da sala ao mesmo tempo**.
+
+### Elementos e regras
+
+| Elemento | Regra |
+| --- | --- |
+| **Emissor** | Solta um raio de luz branca em direção fixa. |
+| **Espelho** | Reflete a luz (ângulo de incidência = ângulo de reflexão) pelos dois lados. Gira em passos de 15°. |
+| **Espelho com cadeado** | Reflete, mas não gira. |
+| **Divisor (vidro roxo)** | Parte da luz atravessa reta e parte é refletida, gerando dois raios. |
+| **Filtro de cor** | A luz branca sai com a cor do filtro. Luz de **outra cor é bloqueada**. |
+| **Prisma** | A luz branca sai dividida em **vermelho** (30° para um lado), **verde** (reto) e **azul** (30° para o outro). Luz colorida atravessa reta. |
+| **Bloco vermelho** | Absorve qualquer raio. As paredes da sala também bloqueiam. |
+| **Cristal** | Acende ao receber luz. Cristal com **anel colorido** só acende com aquela cor. |
+
+Para quem tem daltonismo, cada cor também tem uma forma: **▲ vermelho, ● verde, ■ azul**. Ela aparece
+nos cristais, nos filtros e nos pulsos que correm pelo feixe.
+
+### Condição de vitória
+
+A fase é vencida quando **todos os cristais estão acesos ao mesmo tempo** (o contador "Cristais" no
+topo mostra quantos faltam). Aparece o painel de vitória, com o fragmento recuperado, as estrelas,
+as rotações, a meta e o tempo.
+
+![Vitória na fase 9](docs/img/fase9_vitoria.png)
+
+### Derrota
+
+**Não existe derrota.** É um puzzle sem limite de tempo nem de tentativas: dá para girar à vontade,
+desfazer (`Z`) e reiniciar (`R`). O desafio está em resolver com **poucas rotações**.
+
+### Progressão
+
+- **10 fases** em sequência: terminar uma fase libera a próxima.
+- **Estrelas por fase** (30 no total): ★★★ se o número de rotações for menor ou igual à **meta**
+  da fase (o mínimo possível); ★★ até o dobro da meta; ★ ao concluir.
+- **Fragmentos:** cada fase concluída recupera um fragmento, que acende no prisma do menu. Ao
+  terminar a fase 10, o Prisma de Luz é restaurado e aparece a tela final.
+- **Recordes:** o melhor número de rotações de cada fase aparece na seleção de fases.
+- **Dicas:** `H` mostra uma pista em texto; apertando de novo, um **contorno verde** indica o
+  ângulo certo de um espelho. Após 45 segundos parado, Echo lembra que a dica existe.
+- O progresso e as configurações são **salvos automaticamente**, em
+  `%APPDATA%\Godot\app_userdata\PRISMA\prisma_save.cfg` no Windows. Para recomeçar, use
+  *Opções → Apagar progresso*.
+
+| # | Fase | O que ensina | Meta ★★★ |
+| --- | --- | --- | --- |
+| 1 | Primeiro reflexo | Espelho a 45° transforma raio horizontal em vertical | 3 |
+| 2 | Dois espelhos | Encadear reflexões | 5 |
+| 3 | Desvio | Bloqueios absorvem a luz | 3 |
+| 4 | Espelho fixo | Usar um espelho que não gira | 3 |
+| 5 | Divisor de luz | Um raio vira dois; dois cristais | 6 |
+| 6 | Filtro vermelho | Cristal que exige cor | 7 |
+| 7 | Duas cores | Filtro bloqueia cor errada | 8 |
+| 8 | Três cristais | Dividir, colorir e dividir de novo | 11 |
+| 9 | Dispersão | O prisma separa a luz em três cores | 7 |
+| 10 | O Prisma | Desafio final com prisma, divisor e filtro | 10 |
+
+![Fase 10](docs/img/fase10.png)
+
+## 8. Limitações conhecidas e o que ainda não foi implementado
+
+**Limitações da versão atual**
+
+- O executável pronto é só para **Windows**. Em Linux e macOS o projeto roda pelo editor do Godot, mas
+  não foi testado nesses sistemas nem há build exportada para eles.
+- O executável **não tem assinatura digital**, então o Windows SmartScreen mostra um aviso na
+  primeira execução. O ícone do `.exe` ainda é o padrão do Godot.
+- O **painel de vitória cobre o centro da sala**. O jogador vê os cristais acenderem por cerca de 1 segundo
+  antes de o painel aparecer.
+- O assistente **Echo** só detecta dificuldade **por tempo** (45 s). Ele ainda não percebe giros
+  repetidos sem progresso.
+- O **controle** usa só botões e direcional; o analógico não é usado.
+- Não há opções de **tamanho de texto**, **alto contraste** nem **remapeamento de teclas**.
+- O jogo está disponível só em **português**.
+- A autoria e a licença das **músicas** ainda precisam ser documentadas (ver
+  [docs/creditos.md](docs/creditos.md)).
+
+**Planejado para as próximas entregas (N2)**
+
+- Testes de jogabilidade com pessoas de fora da equipe e métricas por fase (tempo, rotações, dicas).
+- Mais fases (meta: 15) e uma mecânica nova (ex.: espelho em trilho ou emissor girável).
+- Echo contextual, que detecta dificuldade pelo comportamento do jogador.
+- Versão Web para testes online, ícone e metadados no executável.
+- Acessibilidade ampliada e versão em inglês.
+
+## 9. GDD e documentação
+
+| Documento | Onde consultar |
+| --- | --- |
+| **GDD (Game Design Document) atualizado** | **[docs/GDD.md](docs/GDD.md)** (lê direto no GitHub) e [docs/GDD_PRISMA.pdf](docs/GDD_PRISMA.pdf) |
+| Manual de reconstrução do ambiente (escrito para o pacote da entrega N1; neste repositório o projeto Godot fica na raiz) | [docs/Manual_de_Reconstrucao.pdf](docs/Manual_de_Reconstrucao.pdf) |
+| Vídeo de gameplay (2min41s) | [docs/video/PRISMA_Gameplay_N1.mp4](docs/video/PRISMA_Gameplay_N1.mp4) |
+| Contexto e escopo do projeto | [docs/contexto.md](docs/contexto.md) |
+| Decisões de arquitetura (ADRs) | [docs/adr/](docs/adr/) |
+| Histórico de versões | [CHANGELOG.md](CHANGELOG.md) |
+| README do protótipo original (PAC III) | [docs/Prototipo_PAC_III_README.md](docs/Prototipo_PAC_III_README.md) |
+
+## 10. Estrutura do repositório
+
+```
+Jogo-Prisma/
+├── project.godot              # configuração do projeto (cena inicial, janela, autoloads, tema)
+├── export_presets.cfg         # preset "Windows Desktop" (saída em build/windows/)
+├── scenes/                    # menu, seleção de fases, fase jogável e tela final
+├── scripts/
+│   ├── geometria.gd           # regras puras: rotação de 15°, reflexão, interseções, estrelas
+│   ├── feixe.gd               # cálculo puro do caminho da luz (usado pelo jogo e pelos testes)
+│   ├── levels.gd              # dados das 10 fases (gerado e validado pelo simulador)
+│   ├── main.gd / game_hud.gd  # controle da fase e interface
+│   ├── game_state.gd          # autoload: progresso, estrelas, salvamento, configurações
+│   ├── sfx.gd / transition.gd # autoloads: música + efeitos sintetizados; transições
+│   └── ...                    # espelho, cristal, prisma, filtro, bloqueio, emissor, menus, arte
+├── ui/prisma_theme.tres       # tema visual de botões e painéis
+├── assets/audio/              # músicas do menu e das fases
+├── tests/run_tests.gd         # testes automatizados (66 verificações, incluindo as 10 fases)
+├── tools/level_simulator/     # simulador de fases em Node.js (ignorado pelo Godot)
+├── docs/                      # GDD, manual, vídeo, contexto, ADRs, créditos, imagens
+├── .github/workflows/         # CI (testes) e CD (build + release por tag)
+└── CHANGELOG.md
+```
+
+## 11. Testes, CI e releases
+
+**Testes automatizados** (`tests/run_tests.gd`):
+
+- regras geométricas: passo de rotação, orientação do espelho, reflexão, interseções e estrelas;
+- regras da luz: filtro bloqueando cor errada e prisma dividindo a luz;
+- **as 10 fases**: cada uma é montada a partir dos dados e traçada com o mesmo código do jogo. O teste
+  confere que a fase **não começa resolvida**, que **a solução acende todos os cristais** e que a
+  **meta de estrelas** é o mínimo de rotações.
+
+```bash
+godot --headless --editor --quit-after 60   # importa (uma vez)
 godot --headless --script res://tests/run_tests.gd
 ```
 
-Esses mesmos testes rodam automaticamente no CI (`.github/workflows/ci.yml`)
-a cada push ou pull request para `main`.
+- **CI** (`.github/workflows/ci.yml`): roda os testes a cada push ou pull request na `main`.
+- **CD** (`.github/workflows/cd.yml`): ao criar uma tag `vMAJOR.MINOR.PATCH`, exporta a build Windows
+  e publica em [Releases](https://github.com/FelipeAnjos20/Jogo-Prisma/releases).
 
-## Releases
+O fluxo de trabalho é *trunk-based development* com Conventional Commits (ver
+[ADR 004](docs/adr/004-trunk-based-development.md)).
 
-Criar e enviar uma tag `vMAJOR.MINOR.PATCH` dispara o pipeline de publicacao
-(`.github/workflows/cd.yml`), que exporta uma build Windows Desktop e a
-publica como release no GitHub.
-
-## Decisoes de arquitetura
-
-As decisoes de design e arquitetura relevantes estao documentadas em
-[docs/adr/](docs/adr/), incluindo a escolha de representar fases como dados em
-script, o passo de rotacao de 15 graus, o limite de reflexoes do feixe de luz
-e o fluxo de trabalho em git (trunk-based development).
-
-## Creditos
+## 12. Créditos
 
 Veja [docs/creditos.md](docs/creditos.md).

@@ -34,3 +34,18 @@ caminho atual nao fecha o puzzle.
   precisaria primeiro aumentar `max_reflections`.
 - Arranjos "degenerados" (espelhos em loop) nao travam o jogo, apenas
   resultam em um feixe que nao alcanca o cristal.
+
+## Atualizacao (versao 3.0.0)
+
+Com divisores e prismas, um unico raio pode gerar varios outros, entao um
+limite so de reflexoes deixou de ser suficiente. Os limites passaram a ser
+(em `scripts/feixe.gd`):
+
+- `MAX_REFLEXOES = 12` reflexoes por raio;
+- `MAX_RAIOS = 16` raios no total (originais + gerados por divisores e prismas);
+- `MAX_SEGMENTOS = 64` segmentos desenhados por quadro.
+
+O `max_distance` foi substituido pelas **paredes da sala** (`Feixe.SALA`): todo
+raio termina numa parede, num bloqueio ou num cristal, entao o feixe nunca sai
+da area jogavel. O objetivo original (o calculo sempre termina em tempo
+previsivel) foi mantido. Ver tambem o [ADR 005](005-calculo-do-feixe-puro-e-testavel.md).
