@@ -10,6 +10,7 @@ const ObstacleScript := preload("res://scripts/obstacle.gd")
 const PrismScript := preload("res://scripts/prism.gd")
 const TutorialScript := preload("res://scripts/tutorial_pointer.gd")
 const AngleGuideScript := preload("res://scripts/angle_guide.gd")
+const LightPreviewScript := preload("res://scripts/light_preview.gd")
 const EchoBrain := preload("res://scripts/echo_brain.gd")
 const Geometria = preload("res://scripts/geometria.gd")
 const UI := preload("res://scripts/ui_kit.gd")
@@ -119,6 +120,7 @@ var _wake_said := false
 
 # Guia de angulos e caixa de informacao
 var _angle_guide: Node2D = null
+var _preview: Node2D = null
 var _hover_key := ""
 var _hover_time := 0.0
 var _victory_reflections: Array = []
@@ -151,6 +153,10 @@ func _ready() -> void:
 	Sfx.play_music("res://assets/audio/gameplay_music.mp3", -16.0)
 	_angle_guide = AngleGuideScript.new()
 	$Puzzle.add_child(_angle_guide)
+	# A previa fica logo acima do feixe e abaixo das pecas.
+	_preview = LightPreviewScript.new()
+	$Puzzle.add_child(_preview)
+	$Puzzle.move_child(_preview, beam.get_index() + 1)
 	_load_level(clampi(GameState.current_level, 0, GameState.level_count() - 1))
 
 
@@ -211,6 +217,7 @@ func _load_level(index: int) -> void:
 	hud.show_pause(false)
 	hud.hide_victory()
 	hud.hide_toast()
+	hud.echo_return()
 
 	for root in [obstacles_root, filters_root, prisms_root, mirrors_root, crystals_root]:
 		for child in root.get_children():
@@ -387,10 +394,22 @@ func _process(delta: float) -> void:
 
 	var guide_target: Node2D = selected if selected != null else hovered
 	_angle_guide.update_guide(null if completed else guide_target, beam.reflections, GameState.show_angles)
+	_preview.update_preview(_preview_target(), mirrors, filters, obstacles, crystals, prisms, emitter, ROOM_RECT, beam.segments)
 	_update_tooltip(delta)
 
 	_shake = move_toward(_shake, 0.0, delta * 2.2)
 	camera.offset = Vector2(randf_range(-1.0, 1.0), randf_range(-1.0, 1.0)) * 10.0 * _shake * _shake
+
+
+# Espelho da previa da luz: o que esta sob o mouse (ou o selecionado, com teclado/controle).
+func _preview_target() -> Node2D:
+	if completed or _intro_left > 0.0 or _drag_mirror != null or not GameState.show_angles or get_tree().paused:
+		return null
+	if hovered != null and hovered.can_rotate:
+		return hovered
+	if GameState.last_input_pad:
+		return selected
+	return null
 
 
 func _all_settled() -> bool:
@@ -707,6 +726,8 @@ func _show_hint() -> void:
 	if _hint_stage == 0:
 		_hint_stage = 1
 		_say("%s\n(Aperte H de novo e eu mostro o ângulo de um espelho.)" % level["hint"], 9.0, "thinking", PRIORITY_HINT, "DICA DO ECHO")
+		# O Echo voa ate um espelho que ainda precisa girar, sem mostrar o angulo.
+		_echo_point_at(_next_wrong_mirror(), 7.0)
 		return
 
 	var mirror := _next_wrong_mirror()
@@ -716,7 +737,18 @@ func _show_hint() -> void:
 	var index := mirrors.find(mirror)
 	mirror.show_ghost(float(level["solution"][index]))
 	_select(mirror)
+	_echo_point_at(mirror, 5.0)
 	_say("Gire o espelho %d até o contorno verde pontilhado." % mirror.number, 6.0, "thinking", PRIORITY_HINT, "DICA DO ECHO")
+
+
+# O Echo voa e fica ao lado do espelho (do lado com mais espaco na sala).
+func _echo_point_at(mirror: Node2D, stay: float) -> void:
+	if mirror == null:
+		return
+	_select(mirror, false)
+	var screen := mirror.get_global_transform_with_canvas().origin
+	var side := -1.0 if screen.x > ROOM_RECT.get_center().x else 1.0
+	hud.echo_fly_to(screen + Vector2(side * 95.0, -45.0), stay)
 
 
 func _next_wrong_mirror() -> Node2D:
@@ -751,6 +783,7 @@ func _complete_level() -> void:
 	_victory_reflections = explanation_reflections
 	hud.hide_tooltip()
 	hud.hide_choice()
+	hud.echo_return()
 	var calm := GameState.reduce_effects
 	if not calm:
 		_shake = 1.0
@@ -1076,7 +1109,7 @@ func _element_info_at(point: Vector2) -> Dictionary:
 					"body": "Vidro semi-espelhado: parte da luz atravessa reta e parte é refletida, criando dois raios. Inclinação: %d°." % angle}
 			if mirror.can_rotate:
 				return {"key": "m%d" % i, "title": "Espelho %d" % mirror.number,
-					"body": "Reflete a luz: o ângulo de incidência é igual ao de reflexão. Inclinação: %d°. Clique para selecionar; arraste a ponta, use Q/E ou a roda para girar 15°." % angle}
+					"body": "Reflete a luz: o ângulo de incidência é igual ao de reflexão. Inclinação: %d°. O tracejado mostra para onde a luz vai no próximo giro (clique ou E)." % angle}
 			return {"key": "m%d" % i, "title": "Espelho travado",
 				"body": "Reflete a luz, mas não gira. Inclinação: %d°. Use os outros espelhos para levar a luz até ele." % angle}
 

@@ -68,6 +68,9 @@ var _story_image: TextureRect
 var _buddy: EchoFace
 var _buddy_mood_until := 0.0
 var _buddy_sleepy := false
+# Na dica, um Echo "voador" sai da barra e vai ate o espelho certo.
+var _flyer: EchoFace
+var _flyer_tween: Tween
 
 # Pergunta do Echo com botoes de resposta.
 var _choice_holder: Control
@@ -105,6 +108,10 @@ func _ready() -> void:
 	_build_top_bar()
 	_build_bottom_help()
 	_build_toast()
+	_flyer = EchoFace.new(17.0)
+	_flyer.visible = false
+	_flyer.size = _flyer.custom_minimum_size
+	add_child(_flyer)
 	_build_choice()
 	_build_tooltip()
 	_build_banner()
@@ -247,6 +254,44 @@ func set_buddy_sleepy(value: bool) -> void:
 		_buddy.mood = "sleepy"
 	else:
 		set_buddy_mood("surprised", 1.2)
+
+
+# O Echo voa da barra superior ate um ponto da tela (ao lado do espelho da dica),
+# fica ali um tempo e volta. A barra fica sem o Echo enquanto ele esta fora.
+func echo_fly_to(point: Vector2, stay := 4.5) -> void:
+	if _flyer_tween != null:
+		_flyer_tween.kill()
+	var home := _buddy.get_global_rect().get_center()
+	var from := home if not _flyer.visible else _flyer.position + _flyer.size * 0.5
+	_flyer.visible = true
+	_flyer.mood = "happy"
+	_buddy.modulate.a = 0.0
+	_flyer_tween = create_tween()
+	_flyer_tween.tween_method(_place_flyer.bind(from, point), 0.0, 1.0, 0.7).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
+	_flyer_tween.tween_callback(func() -> void:
+		_flyer.mood = "thinking"
+		Sfx.play("hint", 1.3)
+	)
+	_flyer_tween.tween_interval(stay)
+	_flyer_tween.tween_callback(func() -> void: _flyer.mood = "happy")
+	_flyer_tween.tween_method(_place_flyer.bind(point, home), 0.0, 1.0, 0.6).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
+	_flyer_tween.tween_callback(echo_return)
+
+
+# Volta na hora (troca de fase, vitoria).
+func echo_return() -> void:
+	if _flyer_tween != null:
+		_flyer_tween.kill()
+	_flyer.visible = false
+	_buddy.modulate.a = 1.0
+
+
+# Caminho em arco entre dois pontos, com um balanco leve.
+func _place_flyer(t: float, from: Vector2, to: Vector2) -> void:
+	var middle := from.lerp(to, 0.5) + Vector2(0, -90)
+	var point := from.lerp(middle, t).lerp(middle.lerp(to, t), t)
+	point.y += sin(t * PI * 3.0) * 6.0
+	_flyer.position = point - _flyer.size * 0.5
 
 
 func _update_buddy() -> void:
