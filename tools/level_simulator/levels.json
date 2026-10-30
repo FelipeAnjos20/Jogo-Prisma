@@ -1,0 +1,720 @@
+[
+  {
+    "name": "Primeiro reflexo",
+    "objective": "Gire o espelho para levar a luz até o cristal.",
+    "hint": "Um espelho a 45° transforma um raio horizontal em vertical.",
+    "emitter": {
+      "pos": [
+        160,
+        300
+      ],
+      "rot": 0
+    },
+    "crystals": [
+      {
+        "pos": [
+          640,
+          580
+        ],
+        "color": "any"
+      }
+    ],
+    "mirrors": [
+      {
+        "kind": "mirror",
+        "pos": [
+          640,
+          300
+        ],
+        "rot": 0,
+        "can_rotate": true
+      }
+    ],
+    "filters": [],
+    "obstacles": []
+  },
+  {
+    "name": "Dois espelhos",
+    "objective": "Combine os 2 espelhos para desviar a luz duas vezes.",
+    "hint": "Faça a luz descer no primeiro espelho e virar para a direita no segundo.",
+    "emitter": {
+      "pos": [
+        160,
+        340
+      ],
+      "rot": 0
+    },
+    "crystals": [
+      {
+        "pos": [
+          960,
+          590
+        ],
+        "color": "any"
+      }
+    ],
+    "mirrors": [
+      {
+        "kind": "mirror",
+        "pos": [
+          460,
+          340
+        ],
+        "rot": 15,
+        "can_rotate": true
+      },
+      {
+        "kind": "mirror",
+        "pos": [
+          460,
+          590
+        ],
+        "rot": 0,
+        "can_rotate": true
+      }
+    ],
+    "filters": [],
+    "obstacles": []
+  },
+  {
+    "name": "Desvio",
+    "objective": "O bloco vermelho absorve a luz. Contorne-o com 3 espelhos.",
+    "hint": "Desça a luz, atravesse por baixo do bloco e suba até o cristal.",
+    "emitter": {
+      "pos": [
+        160,
+        260
+      ],
+      "rot": 0
+    },
+    "crystals": [
+      {
+        "pos": [
+          900,
+          260
+        ],
+        "color": "any"
+      }
+    ],
+    "mirrors": [
+      {
+        "kind": "mirror",
+        "pos": [
+          400,
+          260
+        ],
+        "rot": 30,
+        "can_rotate": true
+      },
+      {
+        "kind": "mirror",
+        "pos": [
+          400,
+          580
+        ],
+        "rot": 60,
+        "can_rotate": true
+      },
+      {
+        "kind": "mirror",
+        "pos": [
+          900,
+          580
+        ],
+        "rot": -30,
+        "can_rotate": true
+      }
+    ],
+    "filters": [],
+    "obstacles": [
+      {
+        "pos": [
+          640,
+          300
+        ],
+        "size": [
+          95,
+          310
+        ]
+      }
+    ]
+  },
+  {
+    "name": "Espelho fixo",
+    "objective": "Monte uma escada de luz passando pelo espelho travado.",
+    "hint": "O espelho com cadeado não gira. Leve a luz até ele pelo alto.",
+    "emitter": {
+      "pos": [
+        140,
+        610
+      ],
+      "rot": 0
+    },
+    "crystals": [
+      {
+        "pos": [
+          1080,
+          540
+        ],
+        "color": "any"
+      }
+    ],
+    "mirrors": [
+      {
+        "kind": "mirror",
+        "pos": [
+          340,
+          610
+        ],
+        "rot": -30,
+        "can_rotate": true
+      },
+      {
+        "kind": "mirror",
+        "pos": [
+          340,
+          320
+        ],
+        "rot": -60,
+        "can_rotate": true
+      },
+      {
+        "kind": "mirror",
+        "pos": [
+          780,
+          320
+        ],
+        "rot": 45,
+        "can_rotate": false
+      },
+      {
+        "kind": "mirror",
+        "pos": [
+          780,
+          540
+        ],
+        "rot": 30,
+        "can_rotate": true
+      }
+    ],
+    "filters": [],
+    "obstacles": [
+      {
+        "pos": [
+          560,
+          610
+        ],
+        "size": [
+          95,
+          150
+        ]
+      },
+      {
+        "pos": [
+          560,
+          450
+        ],
+        "size": [
+          120,
+          80
+        ]
+      }
+    ]
+  },
+  {
+    "name": "Divisor de luz",
+    "objective": "O vidro divisor parte o raio em dois. Acenda os 2 cristais.",
+    "hint": "Um raio segue reto pelo divisor e o outro desce. Cada espelho cuida de um.",
+    "emitter": {
+      "pos": [
+        160,
+        380
+      ],
+      "rot": 0
+    },
+    "crystals": [
+      {
+        "pos": [
+          860,
+          180
+        ],
+        "color": "any"
+      },
+      {
+        "pos": [
+          1060,
+          620
+        ],
+        "color": "any"
+      }
+    ],
+    "mirrors": [
+      {
+        "kind": "splitter",
+        "pos": [
+          480,
+          380
+        ],
+        "rot": 45,
+        "can_rotate": false
+      },
+      {
+        "kind": "mirror",
+        "pos": [
+          860,
+          380
+        ],
+        "rot": 0,
+        "can_rotate": true
+      },
+      {
+        "kind": "mirror",
+        "pos": [
+          480,
+          620
+        ],
+        "rot": 0,
+        "can_rotate": true
+      }
+    ],
+    "filters": [],
+    "obstacles": []
+  },
+  {
+    "name": "Filtro vermelho",
+    "objective": "Este cristal só aceita luz vermelha. Passe pelo filtro.",
+    "hint": "A luz branca direta não acende o cristal vermelho. Suba, passe pelo filtro e desça.",
+    "emitter": {
+      "pos": [
+        160,
+        560
+      ],
+      "rot": 0
+    },
+    "crystals": [
+      {
+        "pos": [
+          1000,
+          560
+        ],
+        "color": "red"
+      }
+    ],
+    "mirrors": [
+      {
+        "kind": "mirror",
+        "pos": [
+          480,
+          560
+        ],
+        "rot": 0,
+        "can_rotate": true
+      },
+      {
+        "kind": "mirror",
+        "pos": [
+          480,
+          260
+        ],
+        "rot": -15,
+        "can_rotate": true
+      },
+      {
+        "kind": "mirror",
+        "pos": [
+          1000,
+          260
+        ],
+        "rot": 15,
+        "can_rotate": true
+      }
+    ],
+    "filters": [
+      {
+        "pos": [
+          740,
+          260
+        ],
+        "rot": 90,
+        "color": "red"
+      }
+    ],
+    "obstacles": []
+  },
+  {
+    "name": "Duas cores",
+    "objective": "Divida a luz e pinte cada metade com a cor do seu cristal.",
+    "hint": "Luz vermelha não atravessa filtro azul. Acerte o ângulo do divisor primeiro.",
+    "emitter": {
+      "pos": [
+        140,
+        400
+      ],
+      "rot": 0
+    },
+    "crystals": [
+      {
+        "pos": [
+          900,
+          180
+        ],
+        "color": "blue"
+      },
+      {
+        "pos": [
+          1080,
+          620
+        ],
+        "color": "red"
+      }
+    ],
+    "mirrors": [
+      {
+        "kind": "splitter",
+        "pos": [
+          400,
+          400
+        ],
+        "rot": 30,
+        "can_rotate": true
+      },
+      {
+        "kind": "mirror",
+        "pos": [
+          900,
+          400
+        ],
+        "rot": 0,
+        "can_rotate": true
+      },
+      {
+        "kind": "mirror",
+        "pos": [
+          400,
+          620
+        ],
+        "rot": -15,
+        "can_rotate": true
+      }
+    ],
+    "filters": [
+      {
+        "pos": [
+          650,
+          400
+        ],
+        "rot": 90,
+        "color": "blue"
+      },
+      {
+        "pos": [
+          700,
+          620
+        ],
+        "rot": 90,
+        "color": "red"
+      }
+    ],
+    "obstacles": [
+      {
+        "pos": [
+          650,
+          220
+        ],
+        "size": [
+          90,
+          120
+        ]
+      }
+    ]
+  },
+  {
+    "name": "Três cristais",
+    "objective": "Divida, pinte e divida de novo: acenda os 3 cristais ao mesmo tempo.",
+    "hint": "Resolva um ramo de cada vez: o de cima fica verde, o de baixo fica vermelho e se divide.",
+    "emitter": {
+      "pos": [
+        140,
+        220
+      ],
+      "rot": 0
+    },
+    "crystals": [
+      {
+        "pos": [
+          1080,
+          470
+        ],
+        "color": "green"
+      },
+      {
+        "pos": [
+          1080,
+          620
+        ],
+        "color": "red"
+      },
+      {
+        "pos": [
+          920,
+          300
+        ],
+        "color": "any"
+      }
+    ],
+    "mirrors": [
+      {
+        "kind": "splitter",
+        "pos": [
+          380,
+          220
+        ],
+        "rot": 45,
+        "can_rotate": false
+      },
+      {
+        "kind": "mirror",
+        "pos": [
+          760,
+          220
+        ],
+        "rot": 0,
+        "can_rotate": true
+      },
+      {
+        "kind": "mirror",
+        "pos": [
+          760,
+          470
+        ],
+        "rot": 15,
+        "can_rotate": true
+      },
+      {
+        "kind": "mirror",
+        "pos": [
+          380,
+          620
+        ],
+        "rot": 0,
+        "can_rotate": true
+      },
+      {
+        "kind": "splitter",
+        "pos": [
+          920,
+          620
+        ],
+        "rot": 0,
+        "can_rotate": true
+      }
+    ],
+    "filters": [
+      {
+        "pos": [
+          560,
+          220
+        ],
+        "rot": 90,
+        "color": "green"
+      },
+      {
+        "pos": [
+          600,
+          620
+        ],
+        "rot": 90,
+        "color": "red"
+      }
+    ],
+    "obstacles": [
+      {
+        "pos": [
+          1000,
+          220
+        ],
+        "size": [
+          90,
+          150
+        ]
+      }
+    ]
+  },
+  {
+    "name": "Dispersão",
+    "objective": "O prisma separa a luz branca em três cores. Leve cada cor ao seu cristal.",
+    "hint": "O vermelho sai para cima, o verde segue reto e o azul desce. Cada espelho cuida de uma cor.",
+    "emitter": {
+      "pos": [
+        140,
+        380
+      ],
+      "rot": 0
+    },
+    "prisms": [
+      {
+        "pos": [
+          420,
+          380
+        ]
+      }
+    ],
+    "crystals": [
+      {
+        "pos": [
+          1100,
+          230
+        ],
+        "color": "red"
+      },
+      {
+        "pos": [
+          860,
+          160
+        ],
+        "color": "green"
+      },
+      {
+        "pos": [
+          1100,
+          530
+        ],
+        "color": "blue"
+      }
+    ],
+    "mirrors": [
+      {
+        "kind": "mirror",
+        "pos": [
+          680,
+          230
+        ],
+        "rot": -45,
+        "can_rotate": true
+      },
+      {
+        "kind": "mirror",
+        "pos": [
+          860,
+          380
+        ],
+        "rot": 0,
+        "can_rotate": true
+      },
+      {
+        "kind": "mirror",
+        "pos": [
+          680,
+          530
+        ],
+        "rot": 45,
+        "can_rotate": true
+      }
+    ],
+    "filters": [],
+    "obstacles": []
+  },
+  {
+    "name": "O Prisma",
+    "objective": "O verde do prisma está bloqueado. Use o divisor e o filtro para acender as 3 cores.",
+    "hint": "Primeiro acerte o divisor para mandar parte da luz para baixo. Depois o prisma cuida do vermelho e do azul.",
+    "emitter": {
+      "pos": [
+        140,
+        380
+      ],
+      "rot": 0
+    },
+    "prisms": [
+      {
+        "pos": [
+          560,
+          380
+        ]
+      }
+    ],
+    "crystals": [
+      {
+        "pos": [
+          1100,
+          240
+        ],
+        "color": "red"
+      },
+      {
+        "pos": [
+          1100,
+          520
+        ],
+        "color": "blue"
+      },
+      {
+        "pos": [
+          1100,
+          620
+        ],
+        "color": "green"
+      }
+    ],
+    "mirrors": [
+      {
+        "kind": "splitter",
+        "pos": [
+          340,
+          380
+        ],
+        "rot": 30,
+        "can_rotate": true
+      },
+      {
+        "kind": "mirror",
+        "pos": [
+          800,
+          240
+        ],
+        "rot": 30,
+        "can_rotate": true
+      },
+      {
+        "kind": "mirror",
+        "pos": [
+          800,
+          520
+        ],
+        "rot": -30,
+        "can_rotate": true
+      },
+      {
+        "kind": "mirror",
+        "pos": [
+          340,
+          620
+        ],
+        "rot": 0,
+        "can_rotate": true
+      }
+    ],
+    "filters": [
+      {
+        "pos": [
+          560,
+          620
+        ],
+        "rot": 90,
+        "color": "green"
+      }
+    ],
+    "obstacles": [
+      {
+        "pos": [
+          760,
+          380
+        ],
+        "size": [
+          60,
+          130
+        ]
+      }
+    ]
+  }
+]

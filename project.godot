@@ -10,15 +10,28 @@ config_version=5
 
 [application]
 
-config/name="PRISMA project"
+config/name="PRISMA"
+config/description="PRISMA - O lugar onde a luz quebrou. Puzzle de luz, espelhos e geometria."
 run/main_scene="res://scenes/menu.tscn"
 config/features=PackedStringArray("4.6", "GL Compatibility")
 config/icon="res://icon.svg"
+
+[autoload]
+
+GameState="*res://scripts/game_state.gd"
+Sfx="*res://scripts/sfx.gd"
+Transition="*res://scripts/transition.gd"
 
 [display]
 
 window/size/viewport_width=1280
 window/size/viewport_height=720
+window/stretch/mode="canvas_items"
+window/stretch/aspect="keep"
+
+[gui]
+
+theme/custom="res://ui/prisma_theme.tres"
 
 [input]
 
@@ -47,3 +60,4 @@ reset_level={
 rendering_device/driver.windows="d3d12"
 renderer/rendering_method="gl_compatibility"
 renderer/rendering_method.mobile="gl_compatibility"
+environment/defaults/default_clear_color=Color(0.012, 0.018, 0.04, 1)

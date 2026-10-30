@@ -1,333 +1,152 @@
 extends Node2D
 
-signal crystal_activated
+# Desenha o feixe de luz. O calculo do caminho (reflexao, divisor, filtro, prisma, bloqueios,
+# paredes e cristais) fica em scripts/feixe.gd, que e puro e coberto por tests/run_tests.gd.
+# Aqui os nodes da cena sao convertidos em dados e o resultado e desenhado com brilho e particulas.
 
-@export var emitter_path: NodePath
-@export var max_distance = 1800.0
-@export var max_reflections = 5
+const UI := preload("res://scripts/ui_kit.gd")
+const Feixe := preload("res://scripts/feixe.gd")
 
-var beam_points = []
-var hit_points = []
-var crystal_was_hit = false
-var pulse_offset = 0.0
-var beam_line = null
+const PULSE_SPEED := 360.0
+const PULSE_SPACING := 90.0
+const MAX_SPARKS := 160
 
-const BEAM_CORE_COLOR = Color(1.0, 1.0, 0.1, 1.0)
-const BEAM_REFLECTED_COLOR = Color(0.0, 1.0, 1.0, 1.0)
-const BEAM_GLOW_COLOR = Color(1.0, 0.55, 0.0, 0.28)
-const PULSE_COLOR = Color(1.0, 1.0, 1.0, 1.0)
-const PULSE_SPEED = 420.0
-const PULSE_SPACING = 95.0
-const RAY_SURFACE_OFFSET = 2.0
-const MIN_HIT_DISTANCE = 0.5
+var segments: Array = []
+var hits: Array = []
+var energized_prisms: Array = []
+
+var _pulse_offset := 0.0
+var _sparks: Array = []
+var _spark_timer := 0.0
 
 
 func _ready() -> void:
-	z_index = 100
-	beam_line = get_node_or_null("BeamLine")
-	recalculate_beam()
+	var additive := CanvasItemMaterial.new()
+	additive.blend_mode = CanvasItemMaterial.BLEND_MODE_ADD
+	material = additive
 
 
 func _process(delta: float) -> void:
-	pulse_offset = fmod(pulse_offset + PULSE_SPEED * delta, PULSE_SPACING)
-	recalculate_beam()
-
-
-func recalculate_beam() -> void:
-	var emitter = _get_emitter()
-	if emitter == null:
-		_draw_fallback_beam()
-		return
-
-	beam_points.clear()
-	hit_points.clear()
-
-	var origin = emitter.global_position
-	var direction = Vector2.RIGHT.rotated(emitter.global_rotation).normalized()
-	var hit_crystal = false
-	var ignored_mirror = null
-
-	beam_points.append(origin)
-
-	for bounce_index in range(max_reflections + 1):
-		var result = _cast_light_ray(origin, direction, ignored_mirror)
-
-		if result.is_empty():
-			beam_points.append(origin + direction * max_distance)
-			break
-
-		var hit_position = result["position"]
-		var collider = result["collider"]
-
-		beam_points.append(hit_position)
-		hit_points.append(hit_position)
-
-		if result["type"] == "crystal" and collider != null and collider.has_method("activate_from_light"):
-			collider.activate_from_light()
-			hit_crystal = true
-			break
-
-		if result["type"] == "mirror" and collider != null:
-			var normal = collider.get_light_normal(direction)
-			direction = direction.bounce(normal).normalized()
-			origin = hit_position + direction * RAY_SURFACE_OFFSET
-			ignored_mirror = collider
-			continue
-
-		break
-
-	if hit_crystal and not crystal_was_hit:
-		crystal_activated.emit()
-
-	crystal_was_hit = hit_crystal
-	_update_beam_line()
+	_pulse_offset = fmod(_pulse_offset + PULSE_SPEED * delta, PULSE_SPACING)
+	_update_sparks(delta)
 	queue_redraw()
 
 
-func _cast_light_ray(origin: Vector2, direction: Vector2, ignored_mirror) -> Dictionary:
-	var closest = {
-		"distance": max_distance,
-		"position": origin + direction * max_distance,
-		"collider": null,
-		"type": "none",
-	}
+# Retorna um Array[bool] dizendo quais cristais estao recebendo a luz correta.
+func trace(emitter: Node2D, mirrors: Array, filters: Array, obstacles: Array, crystals: Array, prisms: Array, room: Rect2) -> Array:
+	var surfaces: Array = []
+	var owner_id := 0
 
-	for mirror in _get_mirrors():
-		if mirror == ignored_mirror:
-			continue
+	for mirror in mirrors:
+		var segment: PackedVector2Array = mirror.get_light_segment()
+		surfaces.append({"a": segment[0], "b": segment[1], "tipo": mirror.kind, "dono": owner_id})
+		owner_id += 1
 
-		if not mirror.is_active:
-			continue
+	for color_filter in filters:
+		var segment: PackedVector2Array = color_filter.get_light_segment()
+		surfaces.append({"a": segment[0], "b": segment[1], "tipo": "filter", "cor": color_filter.color_name, "dono": owner_id})
+		owner_id += 1
 
-		var segment = mirror.get_light_segment()
-		var mirror_hit = _intersect_ray_segment(origin, direction, segment[0], segment[1])
-
-		if not mirror_hit.is_empty() and mirror_hit["distance"] < closest["distance"]:
-			closest = {
-				"distance": mirror_hit["distance"],
-				"position": mirror_hit["position"],
-				"collider": mirror,
-				"type": "mirror",
-			}
-
-	for obstacle in _get_obstacles():
-		if not obstacle.is_active:
-			continue
-
+	for obstacle in obstacles:
 		for edge in obstacle.get_light_edges():
-			var obstacle_hit = _intersect_ray_segment(origin, direction, edge[0], edge[1])
+			surfaces.append({"a": edge[0], "b": edge[1], "tipo": "obstacle", "dono": owner_id})
+		owner_id += 1
 
-			if not obstacle_hit.is_empty() and obstacle_hit["distance"] < closest["distance"]:
-				closest = {
-					"distance": obstacle_hit["distance"],
-					"position": obstacle_hit["position"],
-					"collider": obstacle,
-					"type": "obstacle",
-				}
+	var crystal_data: Array = []
+	for crystal in crystals:
+		crystal_data.append({"centro": crystal.global_position, "raio": crystal.get_light_radius(), "cor": crystal.required_color})
 
-	var crystal = _get_crystal()
-	if crystal != null:
-		var radius = crystal.get_light_radius()
-		var crystal_hit = _intersect_ray_circle(origin, direction, crystal.global_position, radius)
+	var prism_data: Array = []
+	for prism in prisms:
+		prism_data.append({"centro": prism.global_position, "raio": prism.get_light_radius()})
 
-		if not crystal_hit.is_empty() and crystal_hit["distance"] < closest["distance"]:
-			closest = {
-				"distance": crystal_hit["distance"],
-				"position": crystal_hit["position"],
-				"collider": crystal,
-				"type": "crystal",
-			}
-
-	if closest["type"] == "none":
-		return {}
-
-	return closest
+	var result := Feixe.tracar(emitter.global_position, Vector2.RIGHT.rotated(emitter.global_rotation), surfaces, crystal_data, prism_data, room)
+	segments = result["segments"]
+	hits = result["hits"]
+	energized_prisms.clear()
+	for index in result["energized"]:
+		energized_prisms.append(prisms[index])
+	return result["lit"]
 
 
-func _intersect_ray_segment(origin: Vector2, direction: Vector2, start: Vector2, end: Vector2) -> Dictionary:
-	var segment = end - start
-	var divisor = direction.cross(segment)
+# ---------------------------------------------------------------- efeitos
 
-	if abs(divisor) < 0.0001:
-		return {}
+func _update_sparks(delta: float) -> void:
+	_spark_timer += delta
+	if _spark_timer >= 0.03:
+		_spark_timer = 0.0
+		for hit in hits:
+			if _sparks.size() >= MAX_SPARKS:
+				break
+			var angle := randf() * TAU
+			_sparks.append({
+				"position": to_local(hit["position"]),
+				"velocity": Vector2(cos(angle), sin(angle)) * randf_range(40.0, 130.0),
+				"age": 0.0,
+				"life": randf_range(0.2, 0.45),
+				"color": UI.light_color(hit["color"]),
+			})
 
-	var origin_to_start = start - origin
-	var distance = origin_to_start.cross(segment) / divisor
-	var segment_position = origin_to_start.cross(direction) / divisor
-
-	if distance <= MIN_HIT_DISTANCE:
-		return {}
-
-	if segment_position < 0.0 or segment_position > 1.0:
-		return {}
-
-	return {
-		"distance": distance,
-		"position": origin + direction * distance,
-	}
-
-
-func _intersect_ray_circle(origin: Vector2, direction: Vector2, center: Vector2, radius: float) -> Dictionary:
-	var origin_to_center = origin - center
-	var b = 2.0 * origin_to_center.dot(direction)
-	var c = origin_to_center.dot(origin_to_center) - radius * radius
-	var discriminant = b * b - 4.0 * c
-
-	if discriminant < 0.0:
-		return {}
-
-	var root = sqrt(discriminant)
-	var first_distance = (-b - root) * 0.5
-	var second_distance = (-b + root) * 0.5
-	var distance = first_distance if first_distance > MIN_HIT_DISTANCE else second_distance
-
-	if distance <= MIN_HIT_DISTANCE:
-		return {}
-
-	return {
-		"distance": distance,
-		"position": origin + direction * distance,
-	}
-
-
-func _get_mirrors() -> Array:
-	var parent = get_parent()
-	if parent == null:
-		return []
-
-	var mirrors_node = parent.get_node_or_null("Mirrors")
-	if mirrors_node == null:
-		return []
-
-	return mirrors_node.get_children()
-
-
-func _get_obstacles() -> Array:
-	var parent = get_parent()
-	if parent == null:
-		return []
-
-	var obstacles_node = parent.get_node_or_null("Obstacles")
-	if obstacles_node == null:
-		return []
-
-	return obstacles_node.get_children()
-
-
-func _get_crystal():
-	var parent = get_parent()
-	if parent == null:
-		return null
-
-	return parent.get_node_or_null("Crystal")
-
-
-func _get_emitter():
-	var emitter = get_node_or_null(emitter_path)
-
-	if emitter != null:
-		return emitter
-
-	var parent = get_parent()
-	if parent != null:
-		emitter = parent.get_node_or_null("Emitter")
-
-	return emitter
-
-
-func _draw_fallback_beam() -> void:
-	beam_points.clear()
-	hit_points.clear()
-	beam_points.append(Vector2(120.0, 360.0))
-	beam_points.append(Vector2(980.0, 360.0))
-	_update_beam_line()
-	queue_redraw()
-
-
-func _update_beam_line() -> void:
-	if beam_line == null:
-		return
-
-	beam_line.clear_points()
-
-	for point in beam_points:
-		beam_line.add_point(to_local(point))
+	for spark in _sparks:
+		spark["age"] += delta
+		spark["position"] += spark["velocity"] * delta
+		spark["velocity"] *= 0.9
+	_sparks = _sparks.filter(func(s: Dictionary) -> bool: return s["age"] < s["life"])
 
 
 func _draw() -> void:
-	if beam_points.size() < 2:
+	for segment in segments:
+		var start := to_local(segment["a"])
+		var end := to_local(segment["b"])
+		var color := UI.light_color(segment["color"])
+		_draw_glow_line(start, end, color)
+
+	for segment in segments:
+		_draw_segment_pulses(segment)
+
+	for hit in hits:
+		var point := to_local(hit["position"])
+		var color := UI.light_color(hit["color"])
+		var radius := 9.0 if hit["strong"] else 6.0
+		draw_circle(point, radius * 2.2, Color(color.r, color.g, color.b, 0.12))
+		draw_circle(point, radius, Color(color.r, color.g, color.b, 0.45))
+		draw_circle(point, radius * 0.45, Color(1, 1, 1, 0.9))
+
+	for spark in _sparks:
+		var fade := 1.0 - float(spark["age"]) / float(spark["life"])
+		var spark_color: Color = spark["color"]
+		var tail: Vector2 = spark["velocity"] * 0.06
+		draw_line(spark["position"], spark["position"] - tail, Color(spark_color.r, spark_color.g, spark_color.b, fade), 2.0, true)
+
+
+func _draw_glow_line(start: Vector2, end: Vector2, color: Color) -> void:
+	# Camadas somadas (blend aditivo) criam o brilho.
+	draw_line(start, end, Color(color.r, color.g, color.b, 0.07), 30.0, true)
+	draw_line(start, end, Color(color.r, color.g, color.b, 0.14), 16.0, true)
+	draw_line(start, end, Color(color.r, color.g, color.b, 0.55), 7.0, true)
+	draw_line(start, end, Color(1.0, 1.0, 1.0, 0.75), 2.5, true)
+	draw_circle(start, 8.0, Color(color.r, color.g, color.b, 0.12))
+
+
+func _draw_segment_pulses(segment: Dictionary) -> void:
+	var start: Vector2 = segment["a"]
+	var end: Vector2 = segment["b"]
+	var length := start.distance_to(end)
+	if length < 1.0:
 		return
 
-	for index in range(beam_points.size() - 1):
-		var start = to_local(beam_points[index])
-		var end = to_local(beam_points[index + 1])
-		var color = BEAM_CORE_COLOR
+	var color := UI.light_color(segment["color"])
+	var begin: float = segment["distance"]
+	var first_index := ceilf((begin - _pulse_offset) / PULSE_SPACING)
+	var along := _pulse_offset + first_index * PULSE_SPACING - begin
 
-		if index > 0:
-			color = BEAM_REFLECTED_COLOR
-
-		draw_line(start, end, BEAM_GLOW_COLOR, 22.0)
-		draw_line(start, end, Color(color.r, color.g, color.b, 0.45), 12.0)
-		draw_line(start, end, color, 5.0)
-		_draw_direction_arrow(start, end, color)
-
-	_draw_light_pulses()
-	_draw_hit_marks()
-
-
-func _draw_direction_arrow(start: Vector2, end: Vector2, color: Color) -> void:
-	var length = start.distance_to(end)
-	if length < 70.0:
-		return
-
-	var direction = (end - start).normalized()
-	var side = Vector2(-direction.y, direction.x)
-	var center = start.lerp(end, 0.65)
-	var tip = center + direction * 20.0
-	var left = center - direction * 12.0 + side * 9.0
-	var right = center - direction * 12.0 - side * 9.0
-
-	draw_colored_polygon(PackedVector2Array([tip, left, right]), color)
-
-
-func _draw_light_pulses() -> void:
-	var total_length = _get_total_beam_length()
-	var distance = pulse_offset
-
-	while distance < total_length:
-		var point = to_local(_get_global_point_at_distance(distance))
-		draw_circle(point, 10.0, Color(1.0, 1.0, 1.0, 0.35))
-		draw_circle(point, 5.0, PULSE_COLOR)
-		distance += PULSE_SPACING
-
-
-func _draw_hit_marks() -> void:
-	for point in hit_points:
-		var local_point = to_local(point)
-		draw_circle(local_point, 9.0, Color(1.0, 1.0, 1.0, 1.0))
-		draw_circle(local_point, 5.0, Color(1.0, 0.35, 0.0, 1.0))
-
-
-func _get_total_beam_length() -> float:
-	var total = 0.0
-
-	for index in range(beam_points.size() - 1):
-		total += beam_points[index].distance_to(beam_points[index + 1])
-
-	return total
-
-
-func _get_global_point_at_distance(distance: float) -> Vector2:
-	var remaining = distance
-
-	for index in range(beam_points.size() - 1):
-		var start = beam_points[index]
-		var end = beam_points[index + 1]
-		var segment_length = start.distance_to(end)
-
-		if remaining <= segment_length:
-			return start.lerp(end, remaining / max(segment_length, 0.001))
-
-		remaining -= segment_length
-
-	return beam_points[beam_points.size() - 1]
+	var color_name: String = segment["color"]
+	while along <= length:
+		var point := to_local(start.lerp(end, along / length))
+		draw_circle(point, 9.0, Color(color.r, color.g, color.b, 0.22))
+		if color_name == "white":
+			draw_circle(point, 4.0, Color(1, 1, 1, 0.8))
+		else:
+			# Pulsos com forma da cor (acessibilidade para daltonicos).
+			UI.draw_color_symbol(self, point, 5.5, color_name, Color(1, 1, 1, 0.75))
+		along += PULSE_SPACING
