@@ -64,8 +64,12 @@ próprio arquivo `Godot_v4.6.3-stable_win64.exe`.
 
 ![Botão Code no GitHub](docs/img/github_repo.png)
 
-Extraia o zip, de preferência num caminho curto, como `C:\Jogo-Prisma-main`. Dentro dessa pasta deve
-haver o arquivo **`project.godot`**.
+Extraia o zip: botão direito em `Jogo-Prisma-main.zip` → **Extrair Tudo...** → **Extrair**.
+
+> **Atenção: o Windows cria uma pasta dentro da outra.** O resultado fica assim:
+> `Downloads\Jogo-Prisma-main\Jogo-Prisma-main\project.godot`. O arquivo **`project.godot`** está na
+> pasta **de dentro**. Se quiser deixar mais simples, mova a pasta de dentro para um caminho curto,
+> como `C:\Jogo-Prisma-main`, e confira se o `project.godot` aparece logo ao abri-la.
 
 > Quem usa Git pode clonar: `git clone https://github.com/FelipeAnjos20/Jogo-Prisma.git`
 
@@ -73,10 +77,16 @@ haver o arquivo **`project.godot`**.
 
 1. Abra o `Godot_v4.6.3-stable_win64.exe`. Aparece o **Gerenciador de Projetos**.
 2. Clique em **Importar**. No editor em inglês, o botão se chama **Import**.
-3. Navegue até a pasta extraída e selecione o arquivo **`project.godot`**.
+3. Navegue até a pasta **de dentro** (a que tem o `project.godot`) e selecione o arquivo **`project.godot`**.
+   Se o Godot disser que a pasta não tem projeto, você está na pasta de fora: entre na de dentro.
 4. Clique em **Importar e Editar** (**Import & Edit**).
 
+> **Usando um Godot mais novo (4.7 ou depois)?** Ele avisa que o projeto foi feito numa versão anterior
+> e pergunta se quer converter/atualizar. Pode confirmar: o jogo funciona. Mas, se você for **enviar
+> mudanças para o GitHub**, use o 4.6.3, porque a conversão altera o `project.godot` e outros arquivos.
+
 **4. Aguarde a primeira importação.** Leva de 5 a 20 segundos e acontece só na primeira vez.
+Enquanto isso aparecem barras de progresso ("Importando recursos"); espere terminar antes de rodar.
 
 **5. Rode o jogo.** Aperte **F5**, ou clique no botão **▶** no canto superior direito do editor.
 O jogo abre no menu principal.
@@ -131,7 +141,10 @@ e no menu **Como jogar** dentro do jogo.
 | --- | --- |
 | O jogo não abre e reclama de um arquivo `.pck` | Extraia o zip inteiro e mantenha `Prisma.exe` e `Prisma.pck` juntos na mesma pasta. |
 | O Windows bloqueou o arquivo | Clique em **Mais informações → Executar assim mesmo**. Se não houver essa opção: botão direito em `Prisma.exe` → **Propriedades** → marque **Desbloquear** → **OK**. |
-| O Godot diz que o projeto é de outra versão | Use o **Godot 4.6.3** (ou outro 4.6.x), versão **Standard**. |
+| O Godot não encontra o projeto ou diz que a pasta é inválida | Entre na pasta **de dentro** (`Jogo-Prisma-main\Jogo-Prisma-main`) e selecione o `project.godot`. |
+| O Godot diz que o projeto é de outra versão | Use o **Godot 4.6.3** (ou outro 4.6.x), versão **Standard**. Num 4.7 ou mais novo, pode confirmar a conversão só para jogar. |
+| O Godot abre, mas dá erro ao rodar (F5) | Espere a importação terminar (barras de progresso). Se continuar, feche o Godot, apague a pasta `.godot` dentro do projeto e abra de novo. |
+| Abri pela versão .NET (Mono) e não funciona | Baixe a versão **Standard**. A versão .NET pede programas extras que o projeto não usa. |
 | Tela preta ou erro de vídeo | Atualize o driver da placa de vídeo. O jogo precisa de OpenGL 3.3, que quase todo computador tem. |
 | Sem som | Confira o volume do Windows e, no jogo, **Opções** (volume) e a tecla `M` (liga e desliga a música). |
 | O jogo abriu pausado | Ele pausa sozinho quando a janela perde o foco. Clique em **Continuar** ou aperte `Esc`. |
