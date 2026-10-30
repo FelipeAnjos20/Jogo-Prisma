@@ -322,8 +322,9 @@ desfazer (`Z`) e reiniciar (`R`). O desafio está em resolver com **poucas rota�
 
 - O executável pronto é só para **Windows**. Em Linux e macOS o projeto roda pelo editor do Godot, mas
   não foi testado nesses sistemas nem há build exportada para eles.
-- O executável **não tem assinatura digital**, então o Windows SmartScreen mostra um aviso na
-  primeira execução.
+- O executável **não tem assinatura digital**: o Windows SmartScreen mostra um aviso na primeira
+  execução, e o Windows Defender pode bloquear o download por engano (`Wacatac.H!ml`, alarme falso).
+  O [COMO_ABRIR.md](COMO_ABRIR.md) explica como liberar, ou use a opção pelo Godot.
 - O **Echo** reage a situações previstas (cristal aceso ou apagado, raio passando perto, quente ou frio,
   cor errada, muitos giros sem progresso, posição repetida). A conversa com ele é por **botões de
   resposta**: ele não entende texto livre nem responde a perguntas digitadas.
@@ -341,7 +342,7 @@ desfazer (`Z`) e reiniciar (`R`). O desafio está em resolver com **poucas rota�
 - Mais fases (meta: 15) e uma mecânica nova (ex.: espelho em trilho ou emissor girável).
 - Mais situações e falas para o Echo (por exemplo, explicações diferentes por fase) e um "modo professor"
   que mostra os ângulos da solução esperada.
-- Versão Web para testes online, ícone e metadados no executável.
+- Versão Web para testes online.
 - Acessibilidade ampliada e versão em inglês.
 
 ## 9. GDD e documentação
