@@ -46,6 +46,11 @@ func _init() -> void:
 
 	# Todas as fases: solucao existe, nao comecam resolvidas e a meta confere
 	_test_fases()
+	# --- v3.3 visual ---
+	_test_visual_temas()
+	_test_visual_recorte()
+	_test_visual_poeira()
+	_test_visual_mouse()
 
 	# Interatividade (v3.2): musica, historia e conversa com o Echo
 	_test_notas_dos_cristais()
@@ -401,3 +406,70 @@ func _test_nota_da_sala() -> void:
 	_assert_eq("clique a esquerda da sala toca a nota mais grave", esquerda, Musica.ESCALA[0])
 	_assert_eq("clique a direita da sala toca a nota mais aguda", direita, Musica.ESCALA.back())
 	_assert_eq("clique fora da sala continua dentro da escala", Musica.ESCALA.has(Musica.nota_da_posicao(-500.0, 40.0, 1200.0)), true)
+
+# --- v3.3 visual ---
+func _test_visual_temas() -> void:
+	var temas := preload("res://scripts/temas.gd")
+	var expected := ["Azul frio", "Azul frio", "Azul frio", "Violeta", "Violeta", "Ambar", "Ambar", "Verde-azulado", "Verde-azulado", "Dourado"]
+	for i in range(10):
+		var theme: Dictionary = temas.cor_da_fase(i)
+		_assert_eq("tema da fase %d" % (i + 1), theme["nome"], expected[i])
+		var room: Color = theme["sala"]
+		_assert_eq("fundo da fase %d preserva contraste do feixe" % (i + 1), room.get_luminance() < 0.12, true)
+	_assert_eq("tema limita indice negativo", temas.cor_da_fase(-1), temas.cor_da_fase(0))
+	_assert_eq("tema limita indice acima do fim", temas.cor_da_fase(50), temas.cor_da_fase(9))
+	var changed: Dictionary = temas.cor_da_fase(0)
+	changed["nome"] = "alterado"
+	_assert_eq("tema retorna dados independentes", temas.cor_da_fase(0)["nome"], "Azul frio")
+
+
+func _test_visual_recorte() -> void:
+	var beam := preload("res://scripts/light_beam.gd")
+	var segment := {"a": Vector2(100, 0), "b": Vector2(100, 120), "distance": 200.0, "color": "red"}
+	var original := segment.duplicate(true)
+	_assert_proximo("ramo nao nasce antes da distancia acumulada", beam.visible_length(segment, 180.0), 0.0)
+	_assert_proximo("ramo comeca na distancia acumulada", beam.visible_length(segment, 200.0), 0.0)
+	_assert_proximo("ramo cresce pelo proprio comprimento", beam.visible_length(segment, 245.0), 45.0)
+	_assert_proximo("ramo para no fim do trecho", beam.visible_length(segment, 900.0), 120.0)
+	_assert_proximo("intro concluida mostra trecho completo", beam.visible_length(segment, INF), 120.0)
+	_assert_eq("recorte nao altera dados do calculo", segment, original)
+	var empty := {"a": Vector2.ONE, "b": Vector2.ONE, "distance": 0.0}
+	_assert_proximo("trecho sem comprimento nao desenha ponta", beam.visible_length(empty, INF), 0.0)
+	var incoming := {"a": Vector2.ZERO, "b": Vector2(200, 0), "distance": 0.0}
+	_assert_proximo("tronco ja chegou ao divisor", beam.visible_length(incoming, 245.0), 200.0)
+	var second_branch := {"a": Vector2(200, 0), "b": Vector2(300, 0), "distance": 200.0}
+	_assert_proximo("ramos do divisor crescem juntos", beam.visible_length(second_branch, 245.0), 45.0)
+
+
+func _test_visual_poeira() -> void:
+	var background := preload("res://scripts/scene_background.gd")
+	var segments := [{"a": Vector2.ZERO, "b": Vector2(100, 0), "distance": 0.0, "color": "red"}]
+	var original := segments.duplicate(true)
+	var lit: Color = background.luz_no_ponto(Vector2(50, 0), segments)
+	_assert_proximo("poeira sobre o raio recebe brilho", lit.a, 1.0)
+	_assert_eq("poeira recebe cor do trecho", lit.r > lit.b and lit.r > lit.g, true)
+	var near: Color = background.luz_no_ponto(Vector2(50, 24), segments)
+	_assert_proximo("brilho da poeira cai com distancia", near.a, 0.25)
+	var far: Color = background.luz_no_ponto(Vector2(50, 49), segments)
+	_assert_proximo("poeira distante fica apagada", far.a, 0.0)
+	var ahead: Color = background.luz_no_ponto(Vector2(100, 0), segments, 40.0)
+	_assert_proximo("poeira espera a ponta da intro chegar", ahead.a, 0.0)
+	var hidden: Color = background.luz_no_ponto(Vector2.ZERO, segments, 0.0)
+	_assert_proximo("carga do emissor nao ilumina poeira", hidden.a, 0.0)
+	_assert_eq("poeira nao altera os segmentos", segments, original)
+	var no_beam: Color = background.luz_no_ponto(Vector2.ZERO, [])
+	_assert_proximo("sala sem feixe nao ilumina poeira", no_beam.a, 0.0)
+	segments.append({"a": Vector2(0, 10), "b": Vector2(100, 10), "distance": 0.0, "color": "blue"})
+	var blue: Color = background.luz_no_ponto(Vector2(50, 10), segments)
+	_assert_eq("poeira prefere trecho mais proximo", blue.b > blue.r, true)
+	segments.reverse()
+	var reordered: Color = background.luz_no_ponto(Vector2(50, 10), segments)
+	_assert_eq("cor da poeira independe da ordem de trechos", reordered, blue)
+
+
+func _test_visual_mouse() -> void:
+	var art := preload("res://scripts/menu_art.gd")
+	_assert_eq("raio do menu centralizado sem deslocamento", art.mouse_offset(Vector2.ZERO), Vector2.ZERO)
+	_assert_eq("movimento do mouse tem limite", art.mouse_offset(Vector2(5000, -5000)), Vector2(18, -28))
+	_assert_eq("movimento do mouse tem limite oposto", art.mouse_offset(Vector2(-5000, 5000)), Vector2(-18, 28))
+	_assert_eq("movimento do mouse e proporcional", art.mouse_offset(Vector2(320, 180)), Vector2(9, 14))
