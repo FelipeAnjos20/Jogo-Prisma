@@ -24,6 +24,7 @@ var _objective: Label
 var _rotations_label: Label
 var _goal_label: Label
 var _crystals_label: Label
+var _gems: GemRow
 var _music_button: Button
 
 var _toast_holder: Control
@@ -31,7 +32,7 @@ var _toast: PanelContainer
 var _toast_label: Label
 var _toast_title: Label
 var _toast_tween: Tween
-var _toast_anchor := Vector2(320, 96)
+var _toast_anchor := Vector2(360, 96)
 var _toast_icon: EchoFace
 var _typing := false
 var _typed_chars := 0
@@ -78,9 +79,24 @@ var _resume_button: Button
 
 var _help_label: Label
 var _help_pad_mode := false
+var _help_mouse := ""
 
-const HELP_MOUSE := "Clique: selecionar   ·   Arrastar, Q/E ou roda: girar   ·   1-9 / Tab: trocar   ·   Z: desfazer   ·   H: dica   ·   G: ângulos   ·   T: falar com o Echo   ·   M: música"
-const HELP_PAD := "Controle:  ◀ ▶ girar   ·   LB / RB trocar espelho   ·   A girar   ·   B desfazer   ·   Y dica   ·   X reiniciar   ·   Start pausa"
+# Largura do balao de fala do Echo (o main.gd usa para escolher onde ele atrapalha menos).
+const TOAST_WIDTH := 560.0
+const CHOICE_WIDTH := 640.0
+
+# Atalhos do mouse/teclado, liberados aos poucos: [primeira fase em que aparece, texto].
+const HELP_STEPS := [
+	[0, "Clique: selecionar"],
+	[0, "Arrastar, Q/E ou roda: girar"],
+	[0, "H: dica"],
+	[1, "1-9 / Tab: trocar"],
+	[1, "Z: desfazer"],
+	[2, "T: falar com o Echo"],
+	[2, "G: ângulos"],
+	[3, "M: música"],
+]
+const HELP_PAD :="Controle:  ◀ ▶ girar   ·   LB / RB trocar espelho   ·   A girar   ·   B desfazer   ·   Y dica   ·   X reiniciar   ·   Start pausa"
 
 
 func _ready() -> void:
@@ -115,14 +131,26 @@ func setup_level(index: int, total: int, level: Dictionary) -> void:
 	_level_title.text = "Fase %d de %d  ·  %s" % [index + 1, total, level["name"]]
 	_objective.text = level["objective"]
 	_goal_label.text = "Meta ★★★: até %d rotações" % int(level["par"])
+	_help_mouse = help_for_level(index)
+	_help_label.text = HELP_PAD if _help_pad_mode else _help_mouse
 	_show_banner("FASE %d" % (index + 1), level["name"])
+
+
+# Linha de atalhos da fase: so o que o jogador ja aprendeu, para nao encher a tela de texto.
+static func help_for_level(index: int) -> String:
+	var parts: Array = []
+	for step in HELP_STEPS:
+		if index >= int(step[0]):
+			parts.append(step[1])
+	return "   ·   ".join(parts)
 
 
 func update_stats(rotations: int, par: int, lit: int, total_crystals: int) -> void:
 	_rotations_label.text = "Rotações: %d" % rotations
 	_rotations_label.label_settings.font_color = UI.TEXT if rotations <= par else (UI.ACCENT if rotations <= par * 2 else UI.DANGER)
-	_crystals_label.text = "Cristais: %d / %d" % [lit, total_crystals]
+	_crystals_label.text = "%d / %d" % [lit, total_crystals]
 	_crystals_label.label_settings.font_color = UI.SUCCESS if lit == total_crystals else UI.TEXT_DIM
+	_gems.set_counts(lit, total_crystals)
 
 
 func set_music_state(enabled: bool) -> void:
@@ -243,7 +271,9 @@ func ask(tag: String, question: String, options: Array) -> void:
 		_choice_buttons.add_child(button)
 	set_buddy_mood("thinking", 30.0)
 	_choice_holder.visible = true
-	_choice_holder.position = _toast_anchor - Vector2(0, 14)
+	# A pergunta e mais larga que o balao: nao pode sair da tela.
+	var choice_x := minf(_toast_anchor.x, 1264.0 - CHOICE_WIDTH)
+	_choice_holder.position = Vector2(choice_x, _toast_anchor.y - 14.0)
 	_choice_holder.modulate.a = 0.0
 	var tween := create_tween()
 	tween.set_parallel(true)
@@ -294,7 +324,7 @@ func _process(delta: float) -> void:
 	var pad_mode: bool = GameState.last_input_pad and Input.get_connected_joypads().size() > 0
 	if _help_label != null and pad_mode != _help_pad_mode:
 		_help_pad_mode = pad_mode
-		_help_label.text = HELP_PAD if pad_mode else HELP_MOUSE
+		_help_label.text = HELP_PAD if pad_mode else _help_mouse
 
 	# O aviso fica quase transparente quando o mouse passa por cima, para nao esconder o puzzle.
 	if _toast_holder == null or not _toast_holder.visible:
@@ -394,8 +424,8 @@ func _build_top_bar() -> void:
 	style.border_width_bottom = 1
 	style.content_margin_left = 24
 	style.content_margin_right = 20
-	style.content_margin_top = 10
-	style.content_margin_bottom = 10
+	style.content_margin_top = 6
+	style.content_margin_bottom = 6
 	bar.add_theme_stylebox_override("panel", style)
 	bar.position = Vector2.ZERO
 	bar.size = Vector2(1280, 84)
@@ -416,22 +446,36 @@ func _build_top_bar() -> void:
 	row.add_child(info)
 
 	_level_title = UI.make_label("Fase", 22, Color(1.0, 0.96, 0.84), 700)
-	_objective = UI.make_label("Objetivo", 16, UI.TEXT_DIM, 500)
+	_level_title.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
+	_objective = UI.make_label("Objetivo", 15, UI.TEXT_DIM, 500)
+	# Objetivo longo quebra em ate 2 linhas em vez de empurrar os botoes para fora da tela.
+	_objective.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	_objective.max_lines_visible = 2
+	_objective.custom_minimum_size.x = 200
 	info.add_child(_level_title)
 	info.add_child(_objective)
 
 	var stats := VBoxContainer.new()
 	stats.alignment = BoxContainer.ALIGNMENT_CENTER
 	stats.add_theme_constant_override("separation", 0)
-	stats.custom_minimum_size.x = 230
+	stats.custom_minimum_size.x = 200
 	row.add_child(stats)
 
 	_rotations_label = UI.make_label("Rotações: 0", 18, UI.TEXT, 700)
 	_goal_label = UI.make_label("Meta", 14, UI.ACCENT, 500)
-	_crystals_label = UI.make_label("Cristais: 0 / 1", 15, UI.TEXT_DIM, 600)
-	for label in [_rotations_label, _goal_label, _crystals_label]:
+	for label in [_rotations_label, _goal_label]:
 		label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 		stats.add_child(label)
+
+	# Cristais como gemas que acendem (o numero fica ao lado, para quem preferir ler).
+	var crystal_row := HBoxContainer.new()
+	crystal_row.alignment = BoxContainer.ALIGNMENT_END
+	crystal_row.add_theme_constant_override("separation", 6)
+	stats.add_child(crystal_row)
+	_gems = GemRow.new()
+	crystal_row.add_child(_gems)
+	_crystals_label = UI.make_label("Cristais: 0 / 1", 14, UI.TEXT_DIM, 600)
+	crystal_row.add_child(_crystals_label)
 
 	_buddy = EchoFace.new(19.0)
 	_buddy.mouse_filter = Control.MOUSE_FILTER_STOP
@@ -464,7 +508,8 @@ func _build_top_bar() -> void:
 
 
 func _build_bottom_help() -> void:
-	_help_label = UI.make_label(HELP_MOUSE, 13, Color(0.55, 0.68, 0.85, 0.85), 500)
+	_help_mouse = help_for_level(0)
+	_help_label = UI.make_label(_help_mouse, 13,Color(0.55, 0.68, 0.85, 0.85), 500)
 	_help_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_help_label.position = Vector2(0, 697)
 	_help_label.size = Vector2(1280, 20)
@@ -480,8 +525,8 @@ func _build_toast() -> void:
 
 	_toast = UI.make_panel(Color(0.04, 0.08, 0.15, 0.95), Color(0.55, 0.85, 1.0, 0.6), 14, 14)
 	_toast.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_toast.custom_minimum_size = Vector2(640, 0)
-	_toast.size = Vector2(640, 0)
+	_toast.custom_minimum_size = Vector2(TOAST_WIDTH, 0)
+	_toast.size = Vector2(TOAST_WIDTH, 0)
 	_toast_holder.add_child(_toast)
 
 	var row := HBoxContainer.new()
@@ -501,7 +546,7 @@ func _build_toast() -> void:
 	_toast_title = UI.make_label("ECHO", 14, Color(0.55, 0.9, 1.0), 800)
 	_toast_label = UI.make_label("", 17, UI.TEXT, 500)
 	_toast_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	_toast_label.custom_minimum_size.x = 540
+	_toast_label.custom_minimum_size.x = TOAST_WIDTH - 100.0
 	# O tamanho do balao considera o texto inteiro, entao ele nao muda durante a digitacao.
 	_toast_label.visible_characters_behavior = TextServer.VC_CHARS_AFTER_SHAPING
 	column.add_child(_toast_title)
@@ -515,7 +560,7 @@ func _build_choice() -> void:
 	add_child(_choice_holder)
 
 	var panel := UI.make_panel(Color(0.04, 0.08, 0.15, 0.97), Color(1.0, 0.86, 0.36, 0.7), 14, 14)
-	panel.custom_minimum_size = Vector2(640, 0)
+	panel.custom_minimum_size = Vector2(CHOICE_WIDTH, 0)
 	_choice_holder.add_child(panel)
 
 	var row := HBoxContainer.new()
@@ -766,6 +811,56 @@ class StarRow extends Control:
 			var amount := clampf(reveal - i, 0.0, 1.25)
 			if i < count and amount > 0.0:
 				Kit.draw_star(self, center, base_radius * amount, true)
+
+
+# Uma gema por cristal da fase: apagada fica escura, acesa brilha e da um pulo.
+class GemRow extends Control:
+	var lit := 0
+	var total := 1
+	var _time := 0.0
+	var _pop: Array = []
+
+	func _init() -> void:
+		custom_minimum_size = Vector2(20, 22)
+		mouse_filter = Control.MOUSE_FILTER_IGNORE
+
+	func set_counts(lit_count: int, total_count: int) -> void:
+		if total_count != total:
+			_pop.clear()
+		for i in range(total_count):
+			if _pop.size() <= i:
+				_pop.append(0.0)
+			if i < lit_count and i >= lit:
+				_pop[i] = 1.0
+		lit = lit_count
+		total = total_count
+		custom_minimum_size.x = maxf(20.0, total * 20.0)
+
+	func _process(delta: float) -> void:
+		_time += delta
+		for i in range(_pop.size()):
+			_pop[i] = maxf(0.0, float(_pop[i]) - delta * 2.5)
+		queue_redraw()
+
+	func _draw() -> void:
+		for i in range(total):
+			var on := i < lit
+			var pop: float = _pop[i] if i < _pop.size() else 0.0
+			var center := Vector2(10.0 + i * 20.0, size.y * 0.5 - pop * 4.0)
+			var k := 1.0 + pop * 0.35
+			var points := PackedVector2Array([
+				center + Vector2(0, -8) * k, center + Vector2(6, 0) * k,
+				center + Vector2(0, 8) * k, center + Vector2(-6, 0) * k,
+			])
+			if on:
+				var shine := 0.5 + 0.5 * sin(_time * 3.0 + i)
+				draw_circle(center, 10.0 * k, Color(0.5, 1.0, 0.75, 0.12 + 0.1 * shine))
+				draw_colored_polygon(points, Color(0.55, 1.0, 0.78))
+				draw_line(center + Vector2(-2, -4) * k, center + Vector2(1, -6) * k, Color(1, 1, 1, 0.9), 1.5, true)
+			else:
+				draw_colored_polygon(points, Color(0.1, 0.15, 0.24))
+			points.append(points[0])
+			draw_polyline(points, Color(0.75, 1.0, 0.85) if on else Color(0.4, 0.5, 0.65), 1.2, true)
 
 
 class PrismLogo extends Control:

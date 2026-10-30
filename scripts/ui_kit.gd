@@ -89,13 +89,48 @@ static func make_button(text: String, font_size := 20, min_width := 0.0) -> Butt
 	button.focus_entered.connect(func() -> void:
 		if button.get_viewport() != null and button.get_viewport().gui_get_focus_owner() == button and _pad_mode():
 			play_sound("hover")
+			_hover_effect(button, true)
 	)
+	button.focus_exited.connect(func() -> void: _hover_effect(button, false))
 	button.add_theme_font_size_override("font_size", font_size)
 	if min_width > 0.0:
 		button.custom_minimum_size.x = min_width
-	button.mouse_entered.connect(func() -> void: play_sound("hover"))
-	button.pressed.connect(func() -> void: play_sound("click"))
+	# O botao cresce a partir do centro.
+	button.resized.connect(func() -> void: button.pivot_offset = button.size * 0.5)
+	button.mouse_entered.connect(func() -> void:
+		play_sound("hover")
+		_hover_effect(button, true)
+	)
+	button.mouse_exited.connect(func() -> void: _hover_effect(button, false))
+	# Painel escondido com o mouse em cima: o botao volta ao normal.
+	button.visibility_changed.connect(func() -> void:
+		if not button.is_visible_in_tree():
+			button.scale = Vector2.ONE
+			button.modulate = Color.WHITE
+	)
+	button.pressed.connect(func() -> void:
+		play_sound("click")
+		_press_effect(button)
+	)
 	return button
+
+
+# Botao com vida: cresce um pouco e brilha com o mouse em cima (ou com foco do teclado).
+static func _hover_effect(button: Button, inside: bool) -> void:
+	if not button.is_inside_tree():
+		return
+	var lit := inside and not button.disabled
+	var tween := button.create_tween().set_parallel(true)
+	tween.tween_property(button, "scale", Vector2.ONE * (1.04 if lit else 1.0), 0.14).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
+	tween.tween_property(button, "modulate", Color(1.15, 1.12, 1.05) if lit else Color.WHITE, 0.14)
+
+
+static func _press_effect(button: Button) -> void:
+	if not button.is_inside_tree():
+		return
+	var tween := button.create_tween()
+	tween.tween_property(button, "scale", Vector2.ONE * 0.96, 0.05)
+	tween.tween_property(button, "scale", Vector2.ONE * (1.04 if button.is_hovered() else 1.0), 0.12).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
 
 
 static func _pad_mode() -> bool:

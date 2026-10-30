@@ -37,11 +37,13 @@ const PRIORITY_EVENT := 2
 const PRIORITY_HINT := 3
 const DRAG_THRESHOLD := 8.0
 const DRAG_MIN_RADIUS := 22.0
-const TOAST_SIZE := Vector2(640, 92)
+const TOAST_SIZE := Vector2(560, 92)
 const TOAST_ANCHORS := [
-	Vector2(320, 96), Vector2(56, 104), Vector2(584, 104),
-	Vector2(320, 590), Vector2(56, 590), Vector2(584, 590),
+	Vector2(360, 96), Vector2(56, 104), Vector2(664, 104),
+	Vector2(360, 590), Vector2(56, 590), Vector2(664, 590),
 ]
+# A cada tantos pixels do raio, um ponto conta como "coberto" pelo balao.
+const TOAST_BEAM_STEP := 40.0
 
 const INTRO_MESSAGES := [
 	"Olá, {nome}! Eu sou Echo. O Prisma de Luz se partiu e cada sala guarda um fragmento. Gire o espelho para levar a luz até o cristal.",
@@ -266,6 +268,8 @@ func _load_level(index: int) -> void:
 		$Puzzle.add_child(_tutorial)
 		_tutorial.target = rotatable[0]
 
+	# Calcula o raio da fase nova antes de escolher onde o Echo fala.
+	beam.trace(emitter, mirrors, filters, obstacles, crystals, prisms, ROOM_RECT)
 	hud.set_toast_anchor(_best_toast_anchor())
 	hud.setup_level(index, GameState.level_count(), level)
 	_update_stats()
@@ -296,12 +300,19 @@ func _pop_in(nodes: Array) -> void:
 
 
 func _best_toast_anchor() -> Vector2:
-	# Escolhe a posicao do aviso do Echo que cobre menos pecas (cristais pesam mais).
+	# Escolhe a posicao do aviso do Echo que cobre menos pecas (cristais e o espelho
+	# selecionado pesam mais) e menos do caminho atual da luz.
 	var weighted: Array = []
 	for node in [emitter] + obstacles + filters + prisms + mirrors:
-		weighted.append([node.position, 1.0])
+		weighted.append([node.position, 2.5 if node == selected else 1.0])
 	for crystal in crystals:
 		weighted.append([crystal.position, 3.0])
+	for segment in beam.segments:
+		var a: Vector2 = segment["a"]
+		var b: Vector2 = segment["b"]
+		var steps := int(a.distance_to(b) / TOAST_BEAM_STEP)
+		for i in range(steps + 1):
+			weighted.append([a.lerp(b, float(i) / maxf(1.0, float(steps))), 0.25])
 
 	var best_anchor: Vector2 = TOAST_ANCHORS[0]
 	var best_score := INF
@@ -797,6 +808,9 @@ func _say(text: String, duration: float, mood: String, priority: int, title := "
 		return false
 	_toast_priority = priority
 	_toast_until = _now() + duration + text.length() * 0.022
+	# O lugar do balao e escolhido a cada fala, porque o raio muda a cada giro.
+	if not hud.is_toast_visible():
+		hud.set_toast_anchor(_best_toast_anchor())
 	hud.show_toast(title, text, duration, mood)
 	return true
 
@@ -938,6 +952,8 @@ func _open_echo_menu() -> void:
 		return
 	Sfx.play("talk", 1.2)
 	var quiet := GameState.echo_help == "sozinho"
+	if not hud.is_toast_visible():
+		hud.set_toast_anchor(_best_toast_anchor())
 	hud.ask("echo", _echo.say("pet"), ["Uma dica", "Uma curiosidade", "Pode me ajudar" if quiet else "Fale menos", "Nada, valeu!"])
 
 

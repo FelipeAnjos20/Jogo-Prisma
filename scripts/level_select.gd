@@ -188,9 +188,10 @@ class LevelCard extends Control:
 
 		if not unlocked:
 			draw_rect(Rect2(Vector2.ZERO, size), Color(0.0, 0.01, 0.03, 0.72))
-			var lock_center := Vector2(size.x * 0.5, 58)
+			# Cadeado e texto ficam dentro da miniatura, sem cobrir o nome da fase.
+			var lock_center := Vector2(size.x * 0.5, 44)
 			draw_circle(lock_center, 28.0, Color(0.08, 0.1, 0.16, 0.95))
 			draw_arc(lock_center + Vector2(0, -6), 8.5, PI, TAU, 16, Color(0.75, 0.8, 0.9), 3.5, true)
 			draw_rect(Rect2(lock_center + Vector2(-12, -6), Vector2(24, 19)), Color(0.75, 0.8, 0.9))
 			draw_circle(lock_center + Vector2(0, 3), 3.0, Color(0.08, 0.1, 0.16))
-			draw_string(regular, Vector2(0, 112), "Bloqueada", HORIZONTAL_ALIGNMENT_CENTER, size.x, 15, Kit.TEXT_DIM)
+			draw_string(regular, Vector2(0, 92), "Bloqueada", HORIZONTAL_ALIGNMENT_CENTER, size.x, 14, Kit.TEXT_DIM)
