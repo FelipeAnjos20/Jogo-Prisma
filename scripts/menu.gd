@@ -182,7 +182,7 @@ func _build_options_panel() -> void:
 	inner.add_child(angles)
 
 	var calm := CheckButton.new()
-	calm.text = "Reduzir efeitos (sem flashes e tremores)"
+	calm.text = "Reduzir efeitos (sem flashes)"
 	calm.focus_mode = Control.FOCUS_ALL
 	calm.button_pressed = GameState.reduce_effects
 	calm.toggled.connect(func(on: bool) -> void:
