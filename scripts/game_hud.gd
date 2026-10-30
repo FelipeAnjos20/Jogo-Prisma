@@ -13,6 +13,7 @@ signal menu_requested
 signal music_toggled
 signal echo_clicked
 signal explanation_opened
+signal piece_card_closed
 # tag identifica a pergunta; index e a opcao escolhida.
 signal choice_made(tag: String, index: int)
 
@@ -90,6 +91,13 @@ var _award_text: Label
 var _award_queue: Array = []
 var _award_busy := false
 
+# Cartao de peca nova (aparece na primeira vez que uma peca surge numa fase).
+var _piece_root: Control
+var _piece_icon: PieceIcon
+var _piece_title: Label
+var _piece_text: Label
+var _piece_button: Button
+
 var _help_label: Label
 var _help_pad_mode := false
 var _help_mouse := ""
@@ -117,6 +125,7 @@ func _ready() -> void:
 	_build_flash()
 	_build_victory()
 	_build_pause()
+	_build_piece_card()
 	_build_award()
 
 
@@ -604,9 +613,9 @@ func _build_top_bar() -> void:
 
 func _build_bottom_help() -> void:
 	_help_mouse = UI.atalhos_da_fase(0)
-	_help_label = UI.make_label(_help_mouse, 13, Color(0.55, 0.68, 0.85, 0.85), 500)
+	_help_label = UI.make_label(_help_mouse, 14, Color(0.72, 0.82, 0.96), 600)
 	_help_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	_help_label.position = Vector2(0, 697)
+	_help_label.position = Vector2(0, 695)
 	_help_label.size = Vector2(1280, 20)
 	add_child(_help_label)
 
@@ -1148,4 +1157,134 @@ class HudIcon extends Control:
 				draw_rect(Rect2(c + Vector2(-7, -9), Vector2(5, 18)), ink)
 				draw_rect(Rect2(c + Vector2(2, -9), Vector2(5, 18)), ink)
 		if key != "":
-			draw_string(Kit.font(700), Vector2(0, size.y - 6.0), key, HORIZONTAL_ALIGNMENT_CENTER, size.x, 11, Color(0.6, 0.72, 0.9))
+			draw_string(Kit.font(700), Vector2(0, size.y - 6.0), key, HORIZONTAL_ALIGNMENT_CENTER, size.x, 12, Color(0.8, 0.88, 1.0))
+
+
+# ---------------------------------------------------------------- cartao de peca nova
+
+func _build_piece_card() -> void:
+	_piece_root = _make_overlay(0.5)
+	var center: CenterContainer = _piece_root.get_child(1)
+	var card := UI.make_panel(Color(0.035, 0.06, 0.11, 0.98), Color(1.0, 0.86, 0.36, 0.75), 18, 24)
+	card.custom_minimum_size = Vector2(560, 0)
+	center.add_child(card)
+	var column := VBoxContainer.new()
+	column.add_theme_constant_override("separation", 14)
+	card.add_child(column)
+	var row := HBoxContainer.new()
+	row.add_theme_constant_override("separation", 18)
+	column.add_child(row)
+	_piece_icon = PieceIcon.new()
+	row.add_child(_piece_icon)
+	var texts := VBoxContainer.new()
+	texts.add_theme_constant_override("separation", 4)
+	texts.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	row.add_child(texts)
+	texts.add_child(UI.make_label("PEÇA NOVA", 13, UI.ACCENT, 800))
+	_piece_title = UI.make_label("", 26, Color(1.0, 0.96, 0.84), 800)
+	_piece_text = UI.make_label("", 17, UI.TEXT, 500)
+	_piece_text.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	_piece_text.custom_minimum_size.x = 340
+	texts.add_child(_piece_title)
+	texts.add_child(_piece_text)
+	_piece_button = UI.make_button("Entendi  (Enter)", 18, 200)
+	_piece_button.size_flags_horizontal = Control.SIZE_SHRINK_END
+	_piece_button.pressed.connect(close_piece_card)
+	column.add_child(_piece_button)
+
+
+# info: {peca, titulo, texto} de UI.PECAS_NOVAS. O sinal piece_card_closed avisa quando fechar.
+func show_piece_card(info: Dictionary) -> void:
+	_piece_icon.kind = info["peca"]
+	_piece_title.text = info["titulo"]
+	_piece_text.text = info["texto"]
+	_piece_root.visible = true
+	_piece_root.modulate.a = 0.0
+	create_tween().tween_property(_piece_root, "modulate:a", 1.0, 0.25)
+	Sfx.play("hint", 1.1)
+	_focus_if_pad(_piece_button)
+
+
+func close_piece_card() -> void:
+	if not _piece_root.visible:
+		return
+	_piece_root.visible = false
+	Sfx.play("click")
+	piece_card_closed.emit()
+
+
+func is_piece_card_open() -> bool:
+	return _piece_root.visible
+
+
+# Desenho simplificado de cada peca, no estilo do jogo, com o raio passando.
+class PieceIcon extends Control:
+	const Kit := preload("res://scripts/ui_kit.gd")
+	var kind := "bloco"
+	var _time := 0.0
+
+	func _init() -> void:
+		custom_minimum_size = Vector2(140, 120)
+		mouse_filter = Control.MOUSE_FILTER_IGNORE
+
+	func _process(delta: float) -> void:
+		_time += delta
+		queue_redraw()
+
+	func _beam(a: Vector2, b: Vector2, color: Color) -> void:
+		draw_line(a, b, Color(color.r, color.g, color.b, 0.25), 9.0, true)
+		draw_line(a, b, color, 3.0, true)
+
+	func _draw() -> void:
+		var c := size * 0.5
+		draw_rect(Rect2(Vector2.ZERO, size), Color(0.02, 0.035, 0.07))
+		draw_rect(Rect2(Vector2.ZERO, size), Color(0.4, 0.65, 1.0, 0.35), false, 1.0)
+		var white := Kit.light_color("white")
+		var pulse := 0.5 + 0.5 * sin(_time * 3.0)
+		match kind:
+			"bloco":
+				_beam(Vector2(8, c.y), c + Vector2(-22, 0), white)
+				draw_circle(c + Vector2(-22, 0), 5.0 + pulse * 2.0, Color(1, 1, 1, 0.6))
+				var block := Rect2(c + Vector2(-20, -32), Vector2(40, 64))
+				draw_rect(block, Color(0.3, 0.06, 0.1))
+				for i in range(5):
+					draw_line(block.position + Vector2(4, 10 + i * 11), block.position + Vector2(36, 10 + i * 11), Color(1.0, 0.35, 0.4, 0.35), 1.0)
+				draw_rect(block, Color(1.0, 0.36, 0.42), false, 2.0)
+			"travado":
+				_beam(Vector2(8, c.y), c, white)
+				_beam(c, Vector2(c.x, 8), white)
+				var direction := Vector2(1, 1).normalized() * 34.0
+				draw_line(c - direction, c + direction, Color(0.55, 0.6, 0.68), 7.0, true)
+				var lock := c + Vector2(24, 26)
+				draw_circle(lock, 12.0, Color(0.12, 0.13, 0.17))
+				draw_arc(lock + Vector2(0, -2), 4.0, PI, TAU, 10, Color(0.85, 0.88, 0.95), 2.0, true)
+				draw_rect(Rect2(lock + Vector2(-5.5, -2), Vector2(11, 8)), Color(0.85, 0.88, 0.95))
+			"divisor":
+				_beam(Vector2(8, c.y), c, white)
+				_beam(c, Vector2(size.x - 8, c.y), Color(white.r, white.g, white.b, 0.6 + 0.4 * pulse))
+				_beam(c, Vector2(c.x, size.y - 8), Color(white.r, white.g, white.b, 1.0 - 0.4 * pulse))
+				var direction := Vector2(1, -1).normalized() * 32.0
+				draw_line(c - direction, c + direction, Color(0.62, 0.5, 1.0, 0.8), 8.0, true)
+				draw_line(c - direction, c + direction, Color(0.95, 0.9, 1.0), 1.5, true)
+			"filtro":
+				var red := Kit.light_color("red")
+				_beam(Vector2(8, c.y), c + Vector2(-6, 0), white)
+				_beam(c + Vector2(6, 0), Vector2(size.x - 34, c.y), red)
+				draw_rect(Rect2(c + Vector2(-6, -34), Vector2(12, 68)), Color(red.r, red.g, red.b, 0.45))
+				draw_rect(Rect2(c + Vector2(-6, -34), Vector2(12, 68)), red.lightened(0.3), false, 1.5)
+				var crystal := Vector2(size.x - 22, c.y)
+				draw_circle(crystal, 14.0 + pulse * 2.0, Color(red.r, red.g, red.b, 0.25))
+				draw_arc(crystal, 14.0, 0.0, TAU, 24, red, 2.0, true)
+				Kit.draw_color_symbol(self, crystal + Vector2(0, -26), 6.0, "red", red)
+			"prisma":
+				_beam(Vector2(8, c.y), c + Vector2(-10, 0), white)
+				var colors := ["red", "green", "blue"]
+				for i in range(3):
+					var angle := deg_to_rad(-30.0 + i * 30.0)
+					var end := c + Vector2(cos(angle), sin(angle)) * 64.0
+					_beam(c + Vector2(6, 0), end, Kit.light_color(colors[i]))
+					Kit.draw_color_symbol(self, end + Vector2(-2, -12 if i == 0 else 12), 5.0, colors[i], Kit.light_color(colors[i]))
+				var prism := PackedVector2Array([c + Vector2(0, -22), c + Vector2(20, 14), c + Vector2(-20, 14)])
+				draw_colored_polygon(prism, Color(0.3, 0.26, 0.55, 0.9))
+				prism.append(prism[0])
+				draw_polyline(prism, Color(0.85, 0.85, 1.0), 2.0, true)

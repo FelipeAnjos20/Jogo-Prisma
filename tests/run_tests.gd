@@ -68,6 +68,7 @@ func _init() -> void:
 	_test_atalhos_por_fase()
 	_test_nota_da_sala()
 	_test_clima_das_salas()
+	_test_cartoes_de_peca_nova()
 
 	if _falhas == 0:
 		print("OK: %d/%d testes passaram" % [_total, _total])
@@ -482,3 +483,34 @@ func _test_clima_das_salas() -> void:
 	_assert_eq("fases 6-7 tem faiscas", temas.cor_da_fase(5)["clima"], "faiscas")
 	_assert_eq("fases 8-9 tem vaga-lumes", temas.cor_da_fase(8)["clima"], "vagalumes")
 	_assert_eq("fase 10 tem po dourado", temas.cor_da_fase(9)["clima"], "po_dourado")
+
+
+# O cartao de peca nova aparece exatamente na primeira fase que tem aquela peca.
+func _test_cartoes_de_peca_nova() -> void:
+	var fases := Levels.get_levels()
+	var corretos := true
+	for indice in UIKit.PECAS_NOVAS.keys():
+		var peca: String = UIKit.PECAS_NOVAS[indice]["peca"]
+		var primeira := -1
+		for i in range(fases.size()):
+			if _fase_tem_peca(fases[i], peca):
+				primeira = i
+				break
+		corretos = corretos and primeira == int(indice)
+	_assert_eq("cada cartao de peca nova esta na primeira fase com a peca", corretos, true)
+
+
+func _fase_tem_peca(fase: Dictionary, peca: String) -> bool:
+	match peca:
+		"bloco":
+			return not fase["obstacles"].is_empty()
+		"filtro":
+			return not fase["filters"].is_empty()
+		"prisma":
+			return not fase.get("prisms", []).is_empty()
+	for espelho in fase["mirrors"]:
+		if peca == "divisor" and espelho["kind"] == "splitter":
+			return true
+		if peca == "travado" and espelho["kind"] == "mirror" and not espelho["can_rotate"]:
+			return true
+	return false

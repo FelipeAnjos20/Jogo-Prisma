@@ -588,7 +588,7 @@ func _build_footer() -> void:
 	_progress_label.position = Vector2(88, 672)
 	hud.add_child(_progress_label)
 
-	var version := UI.make_label("F11: tela cheia   ·   v3.5", 13, UI.TEXT_DIM, 500)
+	var version := UI.make_label("F11: tela cheia   ·   v3.6", 13, UI.TEXT_DIM, 500)
 	version.position = Vector2(1060, 690)
 	hud.add_child(version)
 

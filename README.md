@@ -129,7 +129,8 @@ O manual completo, com checklist de conferência e solução de problemas, está
    Antes da fase começar, a tela **Antes de começar** mostra o objetivo e os controles desenhados como
    teclas (Clique, Q/E, Z, H, R, T, Esc). Dá para marcar **Não mostrar de novo**.
 2. A **fase 1 tem um tutorial**: uma seta animada mostra qual espelho girar, e o assistente Echo
-   explica a mecânica. Em cada fase nova, Echo apresenta o elemento novo.
+   explica a mecânica. Na primeira vez que uma peça nova aparece (bloco, espelho travado, divisor,
+   filtro ou prisma), um **cartão** mostra o desenho dela e o que ela faz.
 3. Em **Como jogar**, no menu, há um resumo dos controles e dos elementos. Em **Opções** ficam o
    volume da música e dos efeitos, a tela cheia e o guia de ângulos.
 4. **Parou o mouse sobre uma peça?** Aparece uma caixa explicando o que ela é e o que faz.
@@ -166,7 +167,7 @@ O PRISMA reage a cada ação do jogador:
   Também dá um retorno de **quente ou frio** ("Está esquentando!" / "Esfriou...") e explica quando a luz chegou
   com a **cor errada**. Se você girar muito sem progresso ou repetir uma posição já testada, ele oferece ajuda.
   O texto aparece letra por letra, com som, e Echo muda de expressão (feliz, pensativo, surpreso).
-- **Guia de ângulos (tecla `G`):** no espelho selecionado aparecem a inclinação (θ) e, no ponto onde a
+- **Guia de ângulos (tecla `G`):** no espelho selecionado aparecem um arco discreto da inclinação e, no ponto onde a
   luz bate, a **normal** e os ângulos de **incidência (i)** e de **reflexão (r)**. Assim dá para ver na
   prática que **i = r** sempre.
 - **Caixa de informação:** parar o mouse sobre qualquer peça explica o que ela é (espelho, divisor,

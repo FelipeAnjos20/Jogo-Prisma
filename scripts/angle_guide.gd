@@ -52,16 +52,16 @@ func _draw_protractor() -> void:
 	var center := to_local(_mirror.global_position)
 	var inclination := Geometria.inclinacao_espelho(_mirror.rotation_degrees)
 	var shown := int(round(inclination)) % 180
-	var color := Color(1, 1, 1, 0.55 * _alpha)
+	var color := Color(1, 1, 1, 0.35 * _alpha)
 
 	# Linha horizontal de referencia (0 grau) e arco ate o espelho.
 	draw_dashed_line(center, center + Vector2(78, 0), color, 1.5, 6.0, true, true)
 	if shown > 0:
 		# Na tela o angulo matematico cresce para cima, entao o arco vai de 0 ate -inclinacao.
 		var end_angle := -deg_to_rad(inclination)
-		draw_arc(center, 46.0, end_angle, 0.0, 32, Color(1.0, 0.95, 0.7, 0.85 * _alpha), 2.0, true)
-	# O rotulo fica na ponta da linha de referencia, longe do numero do espelho.
-	_draw_tag(center + Vector2(122, 0), "θ = %d°" % shown, Color(1.0, 0.95, 0.7))
+		draw_arc(center, 46.0, end_angle, 0.0, 32, Color(1.0, 0.95, 0.7, 0.6 * _alpha), 1.5, true)
+	# Sem rotulo de inclinacao: a sala fica menos poluida e o destaque vai para i = r.
+	# A inclinacao continua na caixa de informacao do espelho.
 
 
 func _draw_reflection(reflection: Dictionary) -> void:

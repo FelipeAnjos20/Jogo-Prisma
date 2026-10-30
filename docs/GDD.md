@@ -1,6 +1,6 @@
 # GDD — PRISMA: O lugar onde a luz quebrou
 
-**Game Design Document** · versão do jogo **3.2.0** · versão em PDF: [GDD_PRISMA.pdf](GDD_PRISMA.pdf)
+**Game Design Document** · versão do jogo **3.6.0** · versão em PDF: [GDD_PRISMA.pdf](GDD_PRISMA.pdf)
 
 Equipe: Eduardo Macedo, Felipe dos Anjos, Felipe Schwabe, Vinicius Mesquita
 PAC Extensionista III · Engenharia de Software · Católica de Santa Catarina · Prof. Diego Sauter Possamai
@@ -194,8 +194,8 @@ comentários para não poluir a tela.
 
 ### 9.2 Aprendizagem na tela
 
-- **Guia de ângulos (`G`, ligado por padrão):** no espelho selecionado aparece um transferidor com a
-  inclinação (θ, medida a partir da horizontal no sentido anti-horário). Em cada ponto onde a luz bate
+- **Guia de ângulos (`G`, ligado por padrão):** no espelho selecionado aparece um arco discreto com a
+  inclinação (o valor em graus fica na caixa de informação do espelho). Em cada ponto onde a luz bate
   aparecem a reta normal e os arcos de **incidência (i)** e **reflexão (r)**, sempre com o mesmo valor.
 - **Caixa de informação:** parar o mouse sobre qualquer peça mostra o que ela é e o que faz.
 - **"Por que funcionou?":** no painel de vitória, um botão abre a explicação da solução do próprio
@@ -224,7 +224,15 @@ comentários para não poluir a tela.
 
 ![Conversa com o Echo](img/echo_conversa.png)
 
-### 9.4 Experimentar sem medo (versão 3.3)
+### 9.4 Experimentar sem medo (versões 3.3 a 3.6)
+
+- **Cartão de peça nova (versão 3.6):** na primeira vez que uma peça aparece, um cartão no centro da
+  tela mostra o desenho animado dela e uma frase sobre o que ela faz, antes da fala do Echo: bloco
+  absorvedor (fase 3), espelho travado (fase 4), divisor (fase 5), filtro e cristal colorido (fase 6) e
+  prisma (fase 9). A sala fica parada até o jogador clicar em "Entendi" (ou Enter); o tempo da fase não
+  conta. Um teste automático confere que cada cartão está na primeira fase que tem aquela peça.
+
+![Cartão de peça nova: divisor de luz](img/cartao_peca_nova.png)
 
 - **Prévia da luz:** com o mouse sobre um espelho, um tracejado mostra para onde a luz iria no próximo
   giro (+15°). O cálculo usa o mesmo `Feixe.tracar()` do jogo, sem mexer no feixe de verdade. Liga e

@@ -37,6 +37,16 @@ const ATALHOS := [
 	[3, "M: música"],
 ]
 
+# Cartao de peca nova: na primeira vez que a peca aparece, um cartao explica o que ela faz.
+# Chave: indice da fase. "peca" e o tipo usado no desenho e no teste de consistencia com levels.gd.
+const PECAS_NOVAS := {
+	2: {"peca": "bloco", "titulo": "Bloco absorvedor", "texto": "Absorve qualquer raio que encosta nele. Use os espelhos para dar a volta."},
+	3: {"peca": "travado", "titulo": "Espelho travado", "texto": "Tem um cadeado: não gira, mas continua refletindo a luz. Planeje os outros espelhos em função dele."},
+	4: {"peca": "divisor", "titulo": "Divisor de luz", "texto": "O vidro roxo divide o raio em dois: parte atravessa reto e parte é refletida."},
+	5: {"peca": "filtro", "titulo": "Filtro de cor", "texto": "A luz branca que passa pelo filtro sai colorida. Cristal com anel colorido só acende com a sua cor (▲ vermelho, ● verde, ■ azul)."},
+	8: {"peca": "prisma", "titulo": "Prisma", "texto": "Separa a luz branca em três: vermelho ▲ para um lado, verde ● reto e azul ■ para o outro."},
+}
+
 static var _fonts := {}
 
 

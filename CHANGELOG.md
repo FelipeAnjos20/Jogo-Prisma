@@ -5,6 +5,21 @@ Todas as mudancas notaveis deste projeto serao documentadas neste arquivo.
 O formato e baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/),
 e este projeto segue o [Versionamento Semantico](https://semver.org/lang/pt-BR/).
 
+## [3.6.0] - 2026-10-30
+
+### Adicionado
+
+- Cartao de peca nova: na primeira vez que bloco, espelho travado, divisor, filtro ou prisma
+  aparecem, um cartao com o desenho animado da peca explica o que ela faz ("Entendi" ou Enter).
+  Fica salvo quais cartoes ja foram vistos.
+- GDD e tutorial em PDF atualizados (`docs/GDD_PRISMA.pdf` e `docs/Como_Abrir.pdf`).
+- Testes: 170 verificacoes (cartao na primeira fase de cada peca).
+
+### Alterado
+
+- Guia de angulos sem o rotulo de inclinacao (theta): menos texto na sala, destaque para i = r.
+- Linha de atalhos e teclas dos icones da barra maiores e com mais contraste.
+
 ## [3.5.0] - 2026-10-30
 
 ### Adicionado

@@ -222,6 +222,8 @@ func _load_level(index: int) -> void:
 	hud.set_buddy_sleepy(false)
 	hud.hide_tooltip()
 	hud.show_pause(false)
+	if hud.is_piece_card_open():
+		hud.close_piece_card()
 	hud.hide_victory()
 	hud.hide_toast()
 	hud.echo_return()
@@ -303,6 +305,13 @@ func _load_level(index: int) -> void:
 	await get_tree().create_timer(1.6).timeout
 	if token != _load_token or completed:
 		return
+	# Peca nova (so na primeira vez): um cartao explica o que ela faz antes da fala do Echo.
+	if UI.PECAS_NOVAS.has(index) and not GameState.pieces_seen.has(index):
+		GameState.mark_piece_seen(index)
+		hud.show_piece_card(UI.PECAS_NOVAS[index])
+		await hud.piece_card_closed
+		if token != _load_token or completed:
+			return
 	# Na fase 2 (so na primeira vez) o Echo pergunta como o jogador prefere ser ajudado.
 	if index == 1 and GameState.echo_help == "":
 		hud.ask("help", EchoBrain.personalizar("Agora que você pegou o jeito, {nome}: quer que eu dê pistas quando você travar?", GameState.player_name), ["Sim, me ajuda!", "Deixa comigo!"])
@@ -356,7 +365,7 @@ func _best_toast_anchor() -> Vector2:
 # ---------------------------------------------------------------- loop
 
 func _process(delta: float) -> void:
-	if not completed:
+	if not completed and not hud.is_piece_card_open():
 		_level_time += delta
 	_intro_left = maxf(0.0, _intro_left - delta)
 	_update_hover()
@@ -444,6 +453,12 @@ func _update_stats() -> void:
 
 func _unhandled_input(event: InputEvent) -> void:
 	if Transition.is_busy():
+		return
+	# Com o cartao de peca nova aberto, a sala nao recebe comandos; Enter, Espaco ou Esc fecham.
+	if hud.is_piece_card_open():
+		if event.is_action_pressed("ui_accept") or event.is_action_pressed("ui_cancel"):
+			hud.close_piece_card()
+			get_viewport().set_input_as_handled()
 		return
 	_register_activity(event)
 
@@ -1127,7 +1142,7 @@ func _toggle_angles() -> void:
 # ---------------------------------------------------------------- caixa de informacao das pecas
 
 func _update_tooltip(delta: float) -> void:
-	if completed or get_tree().paused or _drag_mirror != null:
+	if completed or get_tree().paused or _drag_mirror != null or hud.is_piece_card_open():
 		_hover_key = ""
 		hud.hide_tooltip()
 		return

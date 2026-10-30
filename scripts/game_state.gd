@@ -38,6 +38,8 @@ var achievements: Array = []
 var curiosities_heard := 0
 var echo_color := "azul"
 var echo_accessory := "nenhum"
+# Fases cujo cartao de peca nova ja foi mostrado (indices de UI.PECAS_NOVAS).
+var pieces_seen: Array = []
 
 # true quando o jogador esta usando teclado/controle nos menus (mostra o destaque de foco).
 var last_input_pad := false
@@ -177,6 +179,7 @@ func reset_progress() -> void:
 	curiosities_heard = 0
 	echo_color = "azul"
 	echo_accessory = "nenhum"
+	pieces_seen.clear()
 	save_data()
 
 
@@ -267,6 +270,12 @@ func unlock_achievement(id: String) -> bool:
 	return true
 
 
+func mark_piece_seen(index: int) -> void:
+	if not pieces_seen.has(index):
+		pieces_seen.append(index)
+		save_data()
+
+
 func count_curiosity() -> int:
 	curiosities_heard += 1
 	save_data()
@@ -320,6 +329,7 @@ func save_data() -> void:
 	config.set_value("player", "curiosities_heard", curiosities_heard)
 	config.set_value("player", "echo_color", echo_color)
 	config.set_value("player", "echo_accessory", echo_accessory)
+	config.set_value("player", "pieces_seen", pieces_seen)
 	config.save(SAVE_PATH)
 
 
@@ -346,6 +356,8 @@ func load_data() -> void:
 	curiosities_heard = int(config.get_value("player", "curiosities_heard", 0))
 	echo_color = str(config.get_value("player", "echo_color", echo_color))
 	echo_accessory = str(config.get_value("player", "echo_accessory", echo_accessory))
+	var saved_pieces = config.get_value("player", "pieces_seen", [])
+	pieces_seen = saved_pieces.duplicate() if saved_pieces is Array else []
 
 
 func _copy_into(target: Array, source, fallback: int) -> void:
