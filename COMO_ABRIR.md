@@ -98,6 +98,11 @@ O jogo abre no menu principal.
 | Pausar / voltar ao menu | `Esc` |
 | Ir para a próxima fase depois de vencer | `N` ou `Enter` |
 | Tela cheia | `F11` |
+| Mostrar/esconder os ângulos (incidência e reflexão) | `G` |
+
+> **Dica:** pare o mouse sobre qualquer peça para saber o que ela faz. O assistente **Echo** também
+> comenta o que você faz: avisa quando o raio passou perto, quando a cor está errada e oferece ajuda.
+> Ao vencer, clique em **Por que funcionou?** para ver a explicação da sua solução.
 
 A lista completa de controles, regras e elementos do jogo está no [README](README.md#6-como-jogar-iniciar-uma-partida-e-controles)
 e no menu **Como jogar** dentro do jogo.

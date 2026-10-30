@@ -1,6 +1,6 @@
 # GDD — PRISMA: O lugar onde a luz quebrou
 
-**Game Design Document** · versão do jogo **3.0.0** · versão em PDF: [GDD_PRISMA.pdf](GDD_PRISMA.pdf)
+**Game Design Document** · versão do jogo **3.1.0** · versão em PDF: [GDD_PRISMA.pdf](GDD_PRISMA.pdf)
 
 Equipe: Eduardo Macedo, Felipe dos Anjos, Felipe Schwabe, Vinicius Mesquita
 PAC Extensionista III · Engenharia de Software · Católica de Santa Catarina · Prof. Diego Sauter Possamai
@@ -104,6 +104,8 @@ de errar e incentivam a experimentação.
 | Reiniciar | `R` | X |
 | Pausa | `Esc` ou `P` | Start |
 | Próxima fase | `N`, `Enter`, `Espaço` | A |
+| Guia de ângulos | `G` | — |
+| Saber o que é uma peça | Parar o mouse sobre ela | — |
 | Música | `M` | Select |
 | Tela cheia | `F11` ou `Alt+Enter` | — |
 
@@ -146,6 +148,40 @@ automaticamente: existe solução, a fase não começa resolvida e a meta é o m
 - **Dica de 1º nível (`H`):** pista em texto, sem entregar a solução.
 - **Dica de 2º nível (`H` de novo):** um contorno verde pontilhado mostra o ângulo certo de **um** espelho ainda errado. O contorno some ao acertar, e cada novo pedido revela mais um espelho.
 - **Ajuda espontânea:** depois de 45 s sem resolver e sem pedir dica, Echo lembra que a tecla `H` existe.
+
+### 9.1 Echo que conversa e reage
+
+Echo comenta as ações do jogador em tempo real, com várias falas para cada situação (sorteadas sem
+repetir a anterior) e expressões diferentes (feliz, pensativo, surpreso). O texto aparece letra por letra,
+com som de "fala":
+
+| Situação | Exemplo de fala |
+| --- | --- |
+| Um cristal acendeu (fases com vários) | "Acertou um! Falta só 1." |
+| Um cristal apagou | "Ops, esse cristal apagou. A luz deixou de chegar nele." |
+| O raio passou perto de um cristal (até 100 px) | "Quase! O raio passou a 42 px do cristal." |
+| O giro aproximou ou afastou o raio | "Está esquentando!" / "Esfriou... o raio se afastou do cristal." |
+| A luz chegou com a cor errada | "A luz chegou, mas este cristal só acende com luz vermelha ▲." |
+| Muitos giros sem progresso | "Está difícil? Tudo bem! Aperte H e eu te mostro um caminho." |
+| Posição repetida pela 3ª vez | "Você já testou essa posição antes. Que tal girar outro espelho?" |
+| Vitória | "Perfeito! Exatamente a meta." / "Sem nenhuma dica!" / "Novo recorde!" / "A meta é 7 rotações. Topa o desafio?" |
+
+As falas têm prioridade: um comentário nunca interrompe uma dica, e há um intervalo mínimo entre
+comentários para não poluir a tela.
+
+### 9.2 Aprendizagem na tela
+
+- **Guia de ângulos (`G`, ligado por padrão):** no espelho selecionado aparece um transferidor com a
+  inclinação (θ, medida a partir da horizontal no sentido anti-horário). Em cada ponto onde a luz bate
+  aparecem a reta normal e os arcos de **incidência (i)** e **reflexão (r)**, sempre com o mesmo valor.
+- **Caixa de informação:** parar o mouse sobre qualquer peça mostra o que ela é e o que faz.
+- **"Por que funcionou?":** no painel de vitória, um botão abre a explicação da solução do próprio
+  jogador: cada reflexão (incidência = reflexão e quanto o raio virou, 180° − 2i) e o papel do
+  divisor, do filtro e do prisma, se houver.
+
+![Guia de ângulos](img/angulos.png)
+
+![Por que funcionou?](img/porque_funcionou.png)
 
 ![Dica de segundo nível](img/dica.png)
 
@@ -190,13 +226,14 @@ direção da luz. Na vitória há *flash*, um leve tremor de câmera e partícul
 - **Daltonismo:** cada cor tem uma forma (▲ ● ■) nos cristais, filtros e pulsos do feixe.
 - **Vários métodos de entrada:** teclado, mouse (clique, arrastar, roda) e controle, com navegação completa dos menus.
 - **Sem pressão de tempo:** o tempo é só informativo, o jogo pausa sozinho ao perder o foco da janela, e o desfazer é ilimitado.
-- **Ajuda em camadas:** tutorial visual, dicas em dois níveis e lembrete do Echo.
+- **Ajuda em camadas:** tutorial visual, dicas em dois níveis, Echo que reage às ações e caixa de informação em cada peça.
 - Interface que escala para qualquer resolução e modo de tela cheia.
 
 ## 14. Arquitetura técnica
 
 - **Fases guiadas por dados:** `scripts/levels.gd` descreve cada fase (gerado a partir de `tools/level_simulator/levels.json`). A cena `scenes/main.tscn` cria os objetos a partir desses dados ([ADR 001](adr/001-fases-como-dados-em-script.md)).
-- **Regras puras e testáveis:** `scripts/geometria.gd` (rotação, reflexão, interseções, estrelas) e `scripts/feixe.gd` (caminho da luz com fila de raios para divisores e prismas). O jogo e os testes usam o mesmo código ([ADR 005](adr/005-calculo-do-feixe-puro-e-testavel.md)).
+- **Regras puras e testáveis:** `scripts/geometria.gd` (rotação, reflexão, interseções, estrelas, ângulo de incidência, inclinação) e `scripts/feixe.gd` (caminho da luz com fila de raios para divisores e prismas). O jogo e os testes usam o mesmo código ([ADR 005](adr/005-calculo-do-feixe-puro-e-testavel.md)).
+- **Interatividade:** `scripts/echo_brain.gd` (falas do Echo), `scripts/angle_guide.gd` (guia de ângulos). As reflexões usadas pelo guia e pela explicação vêm do mesmo `Feixe.tracar()`.
 - **Autoloads:** `GameState` (progresso e salvamento em `user://prisma_save.cfg`), `Sfx` (áudio) e `Transition` (transições).
 - **Qualidade:** `tests/run_tests.gd` cobre as regras e as 10 fases; a CI roda os testes a cada push, e a CD publica a build Windows a cada tag de versão.
 

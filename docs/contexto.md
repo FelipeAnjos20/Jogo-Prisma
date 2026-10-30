@@ -36,6 +36,12 @@ Luz como progressao narrativa, assistente Echo com dicas em dois niveis, salvame
 automatico, selecao de fases, suporte a teclado, mouse e controle, e acessibilidade
 para daltonismo (cada cor tambem tem uma forma).
 
+Na versao 3.1.0 o jogo ficou mais interativo e mais didatico: Echo comenta as acoes do
+jogador em tempo real (cristal aceso, raio passando perto, "quente ou frio", cor errada,
+muitos giros sem progresso), o guia de angulos mostra a normal e os angulos de incidencia e
+reflexao no espelho selecionado, cada peca tem uma caixa de informacao e o painel de
+vitoria explica "Por que funcionou?" com os angulos da solucao do jogador.
+
 As fases sao descritas como dados em `scripts/levels.gd` (ver
 [ADR 001](adr/001-fases-como-dados-em-script.md)) e validadas automaticamente pelos
 testes (ver [ADR 005](adr/005-calculo-do-feixe-puro-e-testavel.md)).

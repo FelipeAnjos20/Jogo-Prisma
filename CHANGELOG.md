@@ -5,6 +5,26 @@ Todas as mudancas notaveis deste projeto serao documentadas neste arquivo.
 O formato e baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/),
 e este projeto segue o [Versionamento Semantico](https://semver.org/lang/pt-BR/).
 
+## [3.1.0] - 2026-10-30
+
+Interatividade com o jogador e parte educativa.
+
+### Adicionado
+
+- Echo que conversa e reage em tempo real (`scripts/echo_brain.gd`): comemora cristal aceso,
+  avisa cristal apagado, raio passando perto ("Quase!"), retorno de "quente ou frio", cor errada,
+  muitos giros sem progresso e posicao repetida; varias falas por situacao, com prioridade e
+  intervalo para nao poluir a tela.
+- Fala do Echo com efeito de digitacao, som de "fala" e expressoes (feliz, pensativo, surpreso).
+- Guia de angulos (`scripts/angle_guide.gd`, tecla `G`, opcao no menu): inclinacao do espelho
+  selecionado e, no ponto de impacto, a normal e os angulos de incidencia e reflexao.
+- Caixa de informacao ao parar o mouse sobre qualquer peca.
+- Comentario do Echo no painel de vitoria e botao "Por que funcionou?" com a explicacao da
+  solucao do jogador (reflexoes, desvio do raio, divisor, filtro e prisma).
+- `Feixe.tracar()` passa a devolver as reflexoes (entrada, saida, normal e angulo).
+- `Geometria`: normal voltada para o raio, angulo de incidencia e inclinacao do espelho.
+- Testes: 79 verificacoes, incluindo a lei da reflexao (incidencia = reflexao).
+
 ## [3.0.0] - 2026-10-29
 
 Versao entregue na N1. A versao 2.0 foi uma iteracao intermediaria (8 fases)

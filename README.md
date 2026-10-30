@@ -128,7 +128,8 @@ O manual completo, com checklist de conferência e solução de problemas, está
 2. A **fase 1 tem um tutorial**: uma seta animada mostra qual espelho girar, e o assistente Echo
    explica a mecânica. Em cada fase nova, Echo apresenta o elemento novo.
 3. Em **Como jogar**, no menu, há um resumo dos controles e dos elementos. Em **Opções** ficam o
-   volume da música e dos efeitos e a tela cheia.
+   volume da música e dos efeitos, a tela cheia e o guia de ângulos.
+4. **Parou o mouse sobre uma peça?** Aparece uma caixa explicando o que ela é e o que faz.
 
 ![Fase 1 com tutorial](docs/img/fase1_tutorial.png)
 
@@ -143,10 +144,36 @@ O manual completo, com checklist de conferência e solução de problemas, está
 | Reiniciar a fase | `R` | X |
 | Pausar (continuar, reiniciar, música, fases, menu) | `Esc` ou `P` | Start |
 | Ir para a próxima fase (após vencer) | `N`, `Enter` ou `Espaço` | A |
+| Mostrar/esconder o guia de ângulos | `G` | — |
+| Saber o que é uma peça | Parar o mouse sobre ela | — |
 | Ligar/desligar a música | `M` | Select |
 | Tela cheia | `F11` ou `Alt+Enter` | — |
 
 Os menus também podem ser usados com as setas + `Enter` ou com o controle.
+
+### O jogo conversa com você
+
+O PRISMA reage a cada ação do jogador:
+
+- **Echo comenta o que você faz, na hora.** Ele comemora cada cristal aceso ("Acertou um! Falta só 1."),
+  avisa quando um cristal apaga e quando o raio **passou perto** ("Quase! O raio passou a 42 px do cristal").
+  Também dá um retorno de **quente ou frio** ("Está esquentando!" / "Esfriou...") e explica quando a luz chegou
+  com a **cor errada**. Se você girar muito sem progresso ou repetir uma posição já testada, ele oferece ajuda.
+  O texto aparece letra por letra, com som, e Echo muda de expressão (feliz, pensativo, surpreso).
+- **Guia de ângulos (tecla `G`):** no espelho selecionado aparecem a inclinação (θ) e, no ponto onde a
+  luz bate, a **normal** e os ângulos de **incidência (i)** e de **reflexão (r)**. Assim dá para ver na
+  prática que **i = r** sempre.
+- **Caixa de informação:** parar o mouse sobre qualquer peça explica o que ela é (espelho, divisor,
+  filtro, prisma, cristal, bloco, emissor), com a inclinação atual e a cor exigida.
+- **"Por que funcionou?":** ao vencer, Echo comenta o seu desempenho, e esse botão mostra a explicação da
+  **sua** solução: cada reflexão, com incidência = reflexão e quanto o raio virou, mais o papel do
+  divisor, do filtro e do prisma.
+
+![Guia de ângulos e caixa de informação](docs/img/angulos.png)
+
+![Echo reagindo à cor errada](docs/img/echo_reage.png)
+
+![Por que funcionou?](docs/img/porque_funcionou.png)
 
 ## 7. Objetivo, regras, vitória e progressão
 
@@ -222,8 +249,9 @@ desfazer (`Z`) e reiniciar (`R`). O desafio está em resolver com **poucas rota�
   primeira execução. O ícone do `.exe` ainda é o padrão do Godot.
 - O **painel de vitória cobre o centro da sala**. O jogador vê os cristais acenderem por cerca de 1 segundo
   antes de o painel aparecer.
-- O assistente **Echo** só detecta dificuldade **por tempo** (45 s). Ele ainda não percebe giros
-  repetidos sem progresso.
+- O **Echo** reage a situações previstas (cristal aceso ou apagado, raio passando perto, quente ou frio,
+  cor errada, muitos giros sem progresso, posição repetida). Ele não entende texto livre nem responde
+  a perguntas digitadas.
 - O **controle** usa só botões e direcional; o analógico não é usado.
 - Não há opções de **tamanho de texto**, **alto contraste** nem **remapeamento de teclas**.
 - O jogo está disponível só em **português**.
@@ -234,7 +262,8 @@ desfazer (`Z`) e reiniciar (`R`). O desafio está em resolver com **poucas rota�
 
 - Testes de jogabilidade com pessoas de fora da equipe e métricas por fase (tempo, rotações, dicas).
 - Mais fases (meta: 15) e uma mecânica nova (ex.: espelho em trilho ou emissor girável).
-- Echo contextual, que detecta dificuldade pelo comportamento do jogador.
+- Mais situações e falas para o Echo (por exemplo, explicações diferentes por fase) e um "modo professor"
+  que mostra os ângulos da solução esperada.
 - Versão Web para testes online, ícone e metadados no executável.
 - Acessibilidade ampliada e versão em inglês.
 
@@ -268,7 +297,7 @@ Jogo-Prisma/
 │   └── ...                    # espelho, cristal, prisma, filtro, bloqueio, emissor, menus, arte
 ├── ui/prisma_theme.tres       # tema visual de botões e painéis
 ├── assets/audio/              # músicas do menu e das fases
-├── tests/run_tests.gd         # testes automatizados (66 verificações, incluindo as 10 fases)
+├── tests/run_tests.gd         # testes automatizados (79 verificações, incluindo as 10 fases)
 ├── tools/level_simulator/     # simulador de fases em Node.js (ignorado pelo Godot)
 ├── docs/                      # GDD, manual, vídeo, contexto, ADRs, créditos, imagens
 ├── .github/workflows/         # CI (testes) e CD (build + release por tag)
@@ -280,7 +309,9 @@ Jogo-Prisma/
 
 **Testes automatizados** (`tests/run_tests.gd`):
 
-- regras geométricas: passo de rotação, orientação do espelho, reflexão, interseções e estrelas;
+- regras geométricas: passo de rotação, orientação do espelho, reflexão, interseções, estrelas,
+  ângulo de incidência e inclinação do espelho;
+- **lei da reflexão:** na solução da fase 1, o ângulo de incidência é igual ao de reflexão (45° = 45°);
 - regras da luz: filtro bloqueando cor errada e prisma dividindo a luz;
 - **as 10 fases**: cada uma é montada a partir dos dados e traçada com o mesmo código do jogo. O teste
   confere que a fase **não começa resolvida**, que **a solução acende todos os cristais** e que a
