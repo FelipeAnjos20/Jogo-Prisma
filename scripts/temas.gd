@@ -10,6 +10,9 @@ const PALETAS := [
 	["Dourado", Color("2c281b"), Color("19170f"), Color("d6c38d")],
 ]
 
+# Particulas de cada grupo de salas (mesma ordem das paletas).
+const CLIMAS := ["poeira", "estrelas", "faiscas", "vagalumes", "po_dourado"]
+
 
 static func cor_da_fase(indice: int) -> Dictionary:
 	var fase := clampi(indice, 0, 9)
@@ -31,4 +34,5 @@ static func cor_da_fase(indice: int) -> Dictionary:
 		"acento": acento,
 		"grade": Color(acento.r, acento.g, acento.b, 0.085),
 		"vinheta": Color(0.005, 0.006, 0.012, 0.62),
+		"clima": CLIMAS[grupo],
 	}

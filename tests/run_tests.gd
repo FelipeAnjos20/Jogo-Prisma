@@ -67,6 +67,7 @@ func _init() -> void:
 	_test_recompensas_por_estrelas()
 	_test_atalhos_por_fase()
 	_test_nota_da_sala()
+	_test_clima_das_salas()
 
 	if _falhas == 0:
 		print("OK: %d/%d testes passaram" % [_total, _total])
@@ -473,3 +474,11 @@ func _test_visual_mouse() -> void:
 	_assert_eq("movimento do mouse tem limite", art.mouse_offset(Vector2(5000, -5000)), Vector2(18, -28))
 	_assert_eq("movimento do mouse tem limite oposto", art.mouse_offset(Vector2(-5000, 5000)), Vector2(-18, 28))
 	_assert_eq("movimento do mouse e proporcional", art.mouse_offset(Vector2(320, 180)), Vector2(9, 14))
+
+
+func _test_clima_das_salas() -> void:
+	var temas := preload("res://scripts/temas.gd")
+	_assert_eq("fase 1 tem poeira", temas.cor_da_fase(0)["clima"], "poeira")
+	_assert_eq("fases 6-7 tem faiscas", temas.cor_da_fase(5)["clima"], "faiscas")
+	_assert_eq("fases 8-9 tem vaga-lumes", temas.cor_da_fase(8)["clima"], "vagalumes")
+	_assert_eq("fase 10 tem po dourado", temas.cor_da_fase(9)["clima"], "po_dourado")

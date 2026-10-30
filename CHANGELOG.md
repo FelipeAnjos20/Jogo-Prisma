@@ -5,6 +5,20 @@ Todas as mudancas notaveis deste projeto serao documentadas neste arquivo.
 O formato e baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/),
 e este projeto segue o [Versionamento Semantico](https://semver.org/lang/pt-BR/).
 
+## [3.4.0] - 2026-10-30
+
+### Adicionado
+
+- Clima de cada sala (`Temas.CLIMAS`): poeira (1-3), brilhos lilases (4-5), faiscas ambar (6-7),
+  vaga-lumes (8-9) e po dourado (10). "Reduzir efeitos" deixa as particulas paradas.
+- Icones desenhados na barra superior (lampada H, reiniciar R, pausa Esc) com a tecla embaixo.
+- Barrinha de rotacoes: verde ate a meta, amarela ate o dobro e vermelha depois.
+- Testes: 169 verificacoes (clima das salas).
+
+### Alterado
+
+- Vitoria em cartao na lateral esquerda, com sombra so daquele lado: a sala iluminada fica a mostra.
+
 ## [3.3.2] - 2026-10-30
 
 ### Corrigido

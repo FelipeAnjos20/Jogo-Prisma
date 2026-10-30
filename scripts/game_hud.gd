@@ -26,6 +26,7 @@ var _rotations_label: Label
 var _goal_label: Label
 var _crystals_label: Label
 var _gems: GemRow
+var _rotation_bar: RotationBar
 var _music_button: Button
 
 # Fala do Echo na barra superior.
@@ -95,6 +96,9 @@ var _help_mouse := ""
 
 # Largura da pergunta do Echo (com botoes de resposta).
 const CHOICE_WIDTH := 640.0
+# Cartao de vitoria na lateral esquerda.
+const VICTORY_WIDTH := 470.0
+const VICTORY_MARGIN := 24.0
 
 const HELP_PAD := "Controle:  ◀ ▶ girar   ·   LB / RB trocar espelho   ·   A girar   ·   B desfazer   ·   Y dica   ·   X reiniciar   ·   Start pausa"
 
@@ -143,6 +147,7 @@ func setup_level(index: int, total: int, level: Dictionary) -> void:
 func update_stats(rotations: int, par: int, lit: int, total_crystals: int) -> void:
 	_rotations_label.text = "Rotações: %d" % rotations
 	_rotations_label.label_settings.font_color = UI.TEXT if rotations <= par else (UI.ACCENT if rotations <= par * 2 else UI.DANGER)
+	_rotation_bar.set_values(rotations, par)
 	_crystals_label.text = "%d / %d" % [lit, total_crystals]
 	_crystals_label.label_settings.font_color = UI.SUCCESS if lit == total_crystals else UI.TEXT_DIM
 	_gems.set_counts(lit, total_crystals)
@@ -419,18 +424,30 @@ func show_victory(result: Dictionary, rotations: int, par: int, is_last: bool, s
 
 	_victory_root.visible = true
 	_victory_root.modulate.a = 0.0
-	_victory_card.scale = Vector2(0.85, 0.85)
+	_victory_card.reset_size()
+	_place_victory_card()
+	# O cartao entra deslizando pela esquerda.
+	_victory_card.position.x = -VICTORY_WIDTH
 
 	var tween := create_tween()
 	tween.set_parallel(true)
 	tween.tween_property(_victory_root, "modulate:a", 1.0, 0.3)
-	tween.tween_property(_victory_card, "scale", Vector2.ONE, 0.45).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	tween.tween_property(_victory_card, "position:x", VICTORY_MARGIN, 0.5).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
 	tween.chain().tween_interval(0.15)
 	for i in range(3):
 		tween.chain().tween_property(_victory_stars, "reveal", float(i + 1), 0.28).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
 		if i < earned:
 			tween.parallel().tween_callback(Sfx.play.bind("select", 1.0 + i * 0.2))
 	tween.chain().tween_callback(_focus_if_pad.bind(_next_button))
+
+
+# Centraliza o cartao na altura da sala (abaixo da barra superior).
+func _place_victory_card() -> void:
+	var top := 96.0
+	var free := 712.0 - top
+	_victory_card.position.y = top + maxf(0.0, (free - _victory_card.size.y) * 0.5)
+	if _victory_card.position.x >= 0.0:
+		_victory_card.position.x = VICTORY_MARGIN
 
 
 func hide_victory() -> void:
@@ -542,7 +559,11 @@ func _build_top_bar() -> void:
 	_goal_label = UI.make_label("Meta", 14, UI.ACCENT, 500)
 	for label in [_rotations_label, _goal_label]:
 		label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
-		stats.add_child(label)
+	stats.add_child(_rotations_label)
+	# Barrinha das rotacoes: verde ate a meta, amarela ate o dobro, vermelha depois.
+	_rotation_bar = RotationBar.new()
+	stats.add_child(_rotation_bar)
+	stats.add_child(_goal_label)
 
 	# Cristais como gemas que acendem (o numero fica ao lado, para quem preferir ler).
 	var crystal_row := HBoxContainer.new()
@@ -559,17 +580,25 @@ func _build_top_bar() -> void:
 	buttons.add_theme_constant_override("separation", 8)
 	row.add_child(buttons)
 
-	var hint_button := UI.make_button("Dica (H)", 15)
-	hint_button.pressed.connect(func() -> void: hint_requested.emit())
-	var restart_button := UI.make_button("Reiniciar (R)", 15)
-	restart_button.pressed.connect(func() -> void: restart_requested.emit())
-	var pause_button := UI.make_button("II", 15)
-	pause_button.tooltip_text = "Pausa (Esc)"
-	pause_button.pressed.connect(func() -> void: pause_requested.emit())
-	for button in [hint_button, restart_button, pause_button]:
+	# Botoes com icone desenhado e a tecla pequena embaixo.
+	var entries := [
+		["dica", "H", "Dica (H)", func() -> void: hint_requested.emit()],
+		["reiniciar", "R", "Reiniciar (R)", func() -> void: restart_requested.emit()],
+		["pausa", "Esc", "Pausa (Esc)", func() -> void: pause_requested.emit()],
+	]
+	for entry in entries:
+		var button := UI.make_button("", 15)
+		button.custom_minimum_size = Vector2(58, 58)
+		button.tooltip_text = entry[2]
+		button.pressed.connect(entry[3])
 		# Sem foco: setas e Espaco continuam controlando os espelhos, nao estes botoes.
 		button.focus_mode = Control.FOCUS_NONE
 		button.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+		var glyph := HudIcon.new()
+		glyph.kind = entry[0]
+		glyph.key = entry[1]
+		glyph.set_anchors_preset(Control.PRESET_FULL_RECT)
+		button.add_child(glyph)
 		buttons.add_child(button)
 
 
@@ -692,20 +721,30 @@ func _make_overlay(shade_alpha: float) -> Control:
 
 
 func _build_victory() -> void:
-	_victory_root = _make_overlay(0.55)
-	var center: CenterContainer = _victory_root.get_child(1)
+	# Cartao na lateral esquerda, com sombra leve: a sala iluminada continua a mostra
+	# (os cristais ficam do meio para a direita em todas as fases).
+	_victory_root = _make_overlay(0.0)
+	var shade: ColorRect = _victory_root.get_child(0)
+	shade.visible = false
+	var side_shade := SideShade.new()
+	side_shade.set_anchors_preset(Control.PRESET_FULL_RECT)
+	side_shade.mouse_filter = Control.MOUSE_FILTER_STOP
+	_victory_root.add_child(side_shade)
+	_victory_root.move_child(side_shade, 0)
 
-	_victory_card = UI.make_panel(Color(0.035, 0.06, 0.11, 0.97), Color(0.5, 1.0, 0.7, 0.55), 18, 28)
-	_victory_card.custom_minimum_size = Vector2(560, 0)
-	_victory_card.resized.connect(func() -> void: _victory_card.pivot_offset = _victory_card.size * 0.5)
-	center.add_child(_victory_card)
+	_victory_card = UI.make_panel(Color(0.035, 0.06, 0.11, 0.96), Color(0.5, 1.0, 0.7, 0.55), 18, 22)
+	_victory_card.custom_minimum_size = Vector2(VICTORY_WIDTH, 0)
+	_victory_card.resized.connect(_place_victory_card)
+	_victory_root.add_child(_victory_card)
 
 	var column := VBoxContainer.new()
 	column.alignment = BoxContainer.ALIGNMENT_CENTER
-	column.add_theme_constant_override("separation", 12)
+	column.add_theme_constant_override("separation", 10)
 	_victory_card.add_child(column)
 
-	_victory_title = UI.make_label("Cristal ativado!", 36, Color(0.62, 1.0, 0.74), 800, 8)
+	_victory_title = UI.make_label("Cristal ativado!", 27, Color(0.62, 1.0, 0.74), 800, 6)
+	_victory_title.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	_victory_title.custom_minimum_size.x = VICTORY_WIDTH - 44.0
 	_victory_title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	column.add_child(_victory_title)
 
@@ -713,7 +752,9 @@ func _build_victory() -> void:
 	_victory_stars.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 	column.add_child(_victory_stars)
 
-	_victory_info = UI.make_label("", 19, UI.TEXT, 600)
+	_victory_info = UI.make_label("", 16, UI.TEXT, 600)
+	_victory_info.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	_victory_info.custom_minimum_size.x = VICTORY_WIDTH - 44.0
 	_victory_info.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	column.add_child(_victory_info)
 
@@ -729,7 +770,7 @@ func _build_victory() -> void:
 	echo_row.add_child(_victory_echo_icon)
 	_victory_echo = UI.make_label("", 17, Color(0.75, 0.95, 1.0), 600)
 	_victory_echo.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	_victory_echo.custom_minimum_size.x = 420
+	_victory_echo.custom_minimum_size.x = VICTORY_WIDTH - 110.0
 	_victory_echo.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	echo_row.add_child(_victory_echo)
 
@@ -752,7 +793,7 @@ func _build_victory() -> void:
 	_story_title = UI.make_label("", 13, Color(0.85, 0.75, 1.0), 800)
 	_story_text = UI.make_label("", 15, Color(0.92, 0.9, 1.0), 500)
 	_story_text.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	_story_text.custom_minimum_size.x = 340
+	_story_text.custom_minimum_size.x = VICTORY_WIDTH - 90.0
 	story_column.add_child(_story_title)
 	story_column.add_child(_story_text)
 
@@ -763,7 +804,7 @@ func _build_victory() -> void:
 
 	_why_label = UI.make_label("", 15, UI.TEXT, 500)
 	_why_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	_why_label.custom_minimum_size.x = 520
+	_why_label.custom_minimum_size.x = VICTORY_WIDTH - 44.0
 	_why_label.visible = false
 	column.add_child(_why_label)
 
@@ -1032,3 +1073,79 @@ class PrismLogo extends Control:
 			var col: Color = colors[i]
 			draw_line(c + Vector2(4, 0), c + Vector2(28, -8 + i * 8), Color(col.r, col.g, col.b, alpha), 2.0, true)
 		draw_line(c + Vector2(-30, 2), c + Vector2(-6, 2), Color(1.0, 0.93, 0.6), 2.0, true)
+
+
+# Sombra da vitoria so do lado do cartao: escurece a esquerda e deixa a sala clara a direita.
+class SideShade extends Control:
+	func _draw() -> void:
+		var dark := Color(0.0, 0.01, 0.03, 0.6)
+		var clear := Color(0.0, 0.01, 0.03, 0.0)
+		draw_polygon(PackedVector2Array([Vector2.ZERO, Vector2(560, 0), Vector2(560, size.y), Vector2(0, size.y)]), PackedColorArray([dark, dark, dark, dark]))
+		draw_polygon(PackedVector2Array([Vector2(560, 0), Vector2(760, 0), Vector2(760, size.y), Vector2(560, size.y)]), PackedColorArray([dark, clear, clear, dark]))
+
+
+# Barrinha das rotacoes na barra superior. A marca mostra a meta de 3 estrelas.
+class RotationBar extends Control:
+	const Kit := preload("res://scripts/ui_kit.gd")
+	var rotations := 0
+	var par := 1
+	var _shown := 0.0
+
+	func _init() -> void:
+		custom_minimum_size = Vector2(150, 8)
+		mouse_filter = Control.MOUSE_FILTER_IGNORE
+
+	func set_values(rotation_count: int, par_value: int) -> void:
+		rotations = rotation_count
+		par = maxi(1, par_value)
+
+	func _process(delta: float) -> void:
+		var target := clampf(float(rotations) / float(par * 2), 0.0, 1.0)
+		_shown = move_toward(_shown, target, delta * 2.0)
+		queue_redraw()
+
+	func _draw() -> void:
+		var width := 150.0
+		var left := size.x - width
+		var rect := Rect2(Vector2(left, 1), Vector2(width, 5))
+		draw_rect(rect, Color(0.12, 0.16, 0.26))
+		var color := Kit.SUCCESS if rotations <= par else (Kit.ACCENT if rotations <= par * 2 else Kit.DANGER)
+		if _shown > 0.0:
+			draw_rect(Rect2(rect.position, Vector2(width * _shown, rect.size.y)), color)
+		# A meta fica na metade da barra (o dobro da meta enche a barra).
+		var mark := left + width * 0.5
+		draw_line(Vector2(mark, -1), Vector2(mark, 8), Color(1.0, 0.95, 0.75, 0.9), 1.5)
+
+
+# Icone desenhado dos botoes da barra superior (dica, reiniciar, pausa) com a tecla embaixo.
+class HudIcon extends Control:
+	const Kit := preload("res://scripts/ui_kit.gd")
+	var kind := "dica"
+	var key := ""
+
+	func _init() -> void:
+		mouse_filter = Control.MOUSE_FILTER_IGNORE
+
+	func _draw() -> void:
+		var c := Vector2(size.x * 0.5, size.y * 0.5 - 7.0)
+		var ink := Color(0.88, 0.94, 1.0)
+		match kind:
+			"dica":
+				# Lampada com brilho.
+				draw_circle(c + Vector2(0, -2), 12.0, Color(1.0, 0.86, 0.36, 0.18))
+				draw_circle(c + Vector2(0, -2), 7.5, Kit.ACCENT)
+				draw_rect(Rect2(c + Vector2(-4, 5), Vector2(8, 5)), Color(0.75, 0.8, 0.9))
+				draw_line(c + Vector2(-4, 7.5), c + Vector2(4, 7.5), Color(0.4, 0.45, 0.55), 1.0)
+				for angle in [-2.4, -1.57, -0.74]:
+					var direction := Vector2(cos(angle), sin(angle))
+					draw_line(c + Vector2(0, -2) + direction * 11.0, c + Vector2(0, -2) + direction * 14.0, Kit.ACCENT, 1.5, true)
+			"reiniciar":
+				# Seta circular.
+				draw_arc(c, 9.0, deg_to_rad(-60.0), deg_to_rad(230.0), 24, ink, 2.5, true)
+				var tip := c + Vector2(cos(deg_to_rad(-60.0)), sin(deg_to_rad(-60.0))) * 9.0
+				draw_colored_polygon(PackedVector2Array([tip + Vector2(6, 1), tip + Vector2(-3, -5), tip + Vector2(-2, 5)]), ink)
+			"pausa":
+				draw_rect(Rect2(c + Vector2(-7, -9), Vector2(5, 18)), ink)
+				draw_rect(Rect2(c + Vector2(2, -9), Vector2(5, 18)), ink)
+		if key != "":
+			draw_string(Kit.font(700), Vector2(0, size.y - 6.0), key, HORIZONTAL_ALIGNMENT_CENTER, size.x, 11, Color(0.6, 0.72, 0.9))

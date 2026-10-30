@@ -228,6 +228,11 @@ As regras e as soluções das fases continuam as mesmas: a versão 3.3 mexe só 
   girando em volta do prisma) e **ícone e tela de abertura próprios**.
 - **Reduzir efeitos.** Em *Opções* dá para desligar tremor, flash, câmera lenta, zoom e animações fortes
   (a íris vira um *fade* suave e o raio aparece pronto).
+- **Versão 3.4:** cada sala tem o seu clima (poeira, brilhos lilases, faíscas, vaga-lumes e pó dourado);
+  a vitória aparece num cartão na lateral, deixando a sala iluminada à mostra; e a barra de cima ganhou
+  ícones (lâmpada, reiniciar, pausa) e uma barrinha de rotações que muda de cor ao passar da meta.
+
+![Vitória com o cartão na lateral](docs/img/vitoria_lateral.png)
 
 ![Sala dourada da fase 10, com o fragmento voando na vitória](docs/img/sala_dourada_vitoria.png)
 
@@ -315,8 +320,6 @@ desfazer (`Z`) e reiniciar (`R`). O desafio está em resolver com **poucas rota�
   não foi testado nesses sistemas nem há build exportada para eles.
 - O executável **não tem assinatura digital**, então o Windows SmartScreen mostra um aviso na
   primeira execução.
-- O **painel de vitória cobre o centro da sala**. O jogador vê os cristais acenderem por cerca de 1 segundo
-  antes de o painel aparecer.
 - O **Echo** reage a situações previstas (cristal aceso ou apagado, raio passando perto, quente ou frio,
   cor errada, muitos giros sem progresso, posição repetida). A conversa com ele é por **botões de
   resposta**: ele não entende texto livre nem responde a perguntas digitadas.

@@ -45,19 +45,40 @@ func _process(delta: float) -> void:
 	if sample_light:
 		_light_timer = 0.05
 	var reduced := _reduced_effects()
+	var clima: String = _theme.get("clima", "poeira")
 	for mote in _motes:
 		var position_m: Vector2 = mote["position"]
 		if not reduced:
-			position_m.y -= float(mote["speed"]) * delta
-			position_m.x += sin(time * 0.6 + float(mote["phase"])) * 8.0 * delta
+			position_m += _mote_velocity(clima, mote) * delta
+		# Particula que sai da tela volta pelo lado oposto.
 		if position_m.y < -10.0:
 			position_m = Vector2(randf_range(0.0, SCREEN.x), SCREEN.y + 10.0)
+		elif position_m.y > SCREEN.y + 10.0:
+			position_m = Vector2(randf_range(0.0, SCREEN.x), -10.0)
+		position_m.x = fposmod(position_m.x, SCREEN.x)
 		mote["position"] = position_m
 		if sample_light and is_instance_valid(_beam):
 			mote["target_light"] = luz_no_ponto(to_global(position_m), _beam.get("segments"), _beam.call("get_visible_distance"))
 		var light: Color = mote["light"]
 		mote["light"] = light.lerp(mote["target_light"], 1.0 - exp(-delta * 10.0))
 	queue_redraw()
+
+
+# Movimento de cada clima: poeira sobe devagar, estrelas quase paradas, faiscas sobem
+# rapido balancando, vaga-lumes passeiam em todas as direcoes e o po dourado cai.
+func _mote_velocity(clima: String, mote: Dictionary) -> Vector2:
+	var speed: float = mote["speed"]
+	var phase: float = mote["phase"]
+	match clima:
+		"estrelas":
+			return Vector2(sin(time * 0.3 + phase) * 3.0, -speed * 0.15)
+		"faiscas":
+			return Vector2(sin(time * 3.0 + phase) * 22.0, -speed * 2.2)
+		"vagalumes":
+			return Vector2(cos(time * 0.7 + phase * 2.0), sin(time * 0.9 + phase)) * speed * 1.4
+		"po_dourado":
+			return Vector2(sin(time * 0.5 + phase) * 10.0, speed * 0.8)
+	return Vector2(sin(time * 0.6 + phase) * 8.0, -speed)
 
 
 func _sync_theme() -> void:
@@ -199,15 +220,47 @@ func _draw_free_grid() -> void:
 
 func _draw_motes() -> void:
 	var reduced := _reduced_effects()
+	var clima: String = _theme.get("clima", "poeira")
 	for mote in _motes:
 		var twinkle := 0.5 if reduced else 0.5 + 0.5 * sin(time * 2.0 + float(mote["phase"]))
 		var size: float = mote["size"]
-		draw_circle(mote["position"], size * 2.5, Color(0.6, 0.85, 1.0, 0.04 * twinkle))
-		draw_circle(mote["position"], size, Color(0.75, 0.9, 1.0, 0.18 + 0.3 * twinkle))
+		_draw_mote(clima, mote["position"], size, twinkle, float(mote["phase"]), reduced)
 		var light: Color = mote["light"]
 		if light.a > 0.01:
 			draw_circle(mote["position"], size * 4.0, Color(light.r, light.g, light.b, light.a * 0.14))
 			draw_circle(mote["position"], size * 1.3, Color(light.r, light.g, light.b, light.a * 0.8))
+
+
+func _draw_mote(clima: String, point: Vector2, size: float, twinkle: float, phase: float, reduced: bool) -> void:
+	match clima:
+		"estrelas":
+			# Brilho de quatro pontas, lilas.
+			var color := Color(0.85, 0.75, 1.0, 0.2 + 0.5 * twinkle)
+			var arm := size * (2.0 + 2.0 * twinkle)
+			draw_line(point - Vector2(arm, 0), point + Vector2(arm, 0), color, 1.0, true)
+			draw_line(point - Vector2(0, arm), point + Vector2(0, arm), color, 1.0, true)
+			draw_circle(point, size * 0.8, Color(1.0, 0.95, 1.0, 0.3 + 0.5 * twinkle))
+		"faiscas":
+			# Faisca laranja com rastro, piscando rapido.
+			var flicker := 0.5 if reduced else 0.5 + 0.5 * sin(time * 9.0 + phase * 3.0)
+			var color := Color(1.0, 0.68, 0.3, 0.25 + 0.55 * flicker)
+			draw_line(point, point + Vector2(0, size * 5.0), Color(color.r, color.g, color.b, color.a * 0.4), size * 0.8, true)
+			draw_circle(point, size * 0.9, color)
+			draw_circle(point, size * 3.0, Color(1.0, 0.55, 0.2, 0.05 * flicker))
+		"vagalumes":
+			# Vaga-lume: acende e apaga devagar, com halo verde.
+			var glow := 0.5 if reduced else pow(maxf(0.0, sin(time * 1.5 + phase)), 3.0)
+			draw_circle(point, size * 6.0, Color(0.6, 1.0, 0.45, 0.1 * glow))
+			draw_circle(point, size * 1.1, Color(0.8, 1.0, 0.55, 0.15 + 0.75 * glow))
+		"po_dourado":
+			var color := Color(1.0, 0.86, 0.45, 0.2 + 0.45 * twinkle)
+			draw_circle(point, size * 2.5, Color(1.0, 0.85, 0.4, 0.05 * twinkle))
+			draw_circle(point, size * 0.9, color)
+			if twinkle > 0.92:
+				draw_line(point - Vector2(size * 3.0, 0), point + Vector2(size * 3.0, 0), color, 1.0, true)
+		_:
+			draw_circle(point, size * 2.5, Color(0.6, 0.85, 1.0, 0.04 * twinkle))
+			draw_circle(point, size, Color(0.75, 0.9, 1.0, 0.18 + 0.3 * twinkle))
 
 
 func _draw_vignette() -> void:

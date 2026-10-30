@@ -247,8 +247,8 @@ comentários para não poluir a tela.
 | Nome do jogador | Na primeira partida: Echo se apresenta e pergunta o nome (Começar / Prefiro não dizer) |
 | Memórias do Prisma | As 10 memórias da história; as bloqueadas mostram qual fase concluir |
 | Seleção de fases | O Farol de Aurora: 10 andares (de baixo para cima) com janela acesa, estrelas ou cadeado; lanterna que brilha com os fragmentos; cartão com miniatura grande, objetivo, meta, recorde e botão Jogar |
-| HUD da fase | Nome, objetivo, rotações (com cor em relação à meta), cristais como gemas que acendem, Echo clicável, botões Dica/Reiniciar/Pausa; linha de atalhos que cresce conforme a fase e muda quando o controle é usado |
-| Vitória | Título de fragmento, estrelas animadas, rotações, meta, tempo, recorde, comentário do Echo, memória do fragmento (1ª vez), "Por que funcionou?"; Fases / Jogar de novo / Próxima fase |
+| HUD da fase | Echo clicável (onde ele também fala), nome e objetivo, rotações com barrinha colorida em relação à meta, cristais como gemas que acendem, botões com ícone (lâmpada H, reiniciar R, pausa Esc); linha de atalhos que cresce conforme a fase e muda quando o controle é usado |
+| Vitória | Cartão na lateral esquerda (a sala iluminada continua à mostra): título de fragmento, estrelas animadas, rotações, meta, tempo, recorde, comentário do Echo, memória do fragmento (1ª vez), "Por que funcionou?"; Fases / Jogar de novo / Próxima fase |
 | Pausa | Continuar, Reiniciar, Música, Seleção de fases, Menu principal |
 | Tela final | Prisma restaurado com os 10 fragmentos, agradecimento do Echo com o nome do jogador, confete, total de estrelas |
 | Opções | Volumes, tela cheia, guia de ângulos, reduzir efeitos, apagar progresso; cartão "Você e o Echo" com o nome e as pistas ligadas/desligadas |
@@ -289,6 +289,13 @@ o emissor dá um pulso de carga e o raio **nasce** e cresce até o fim do caminh
 brilha na cor do trecho de luz que passa perto. Entre as fases há uma **íris de luz** que fecha e abre
 a partir do centro, o raio do menu acompanha o mouse e os fragmentos recuperados giram em volta do
 prisma. O jogo ganhou ícone e tela de abertura próprios (prisma com o espectro, fundo `#03050A`).
+
+Na versão 3.4, cada grupo de salas ganhou um **clima** próprio nas partículas do fundo: poeira azul
+(1–3), brilhos lilases de quatro pontas (4–5), faíscas âmbar subindo (6–7), vaga-lumes que acendem e
+apagam (8–9) e pó dourado caindo (10). O painel de vitória virou um **cartão na lateral esquerda**,
+com sombra só daquele lado, para o jogador ver a sala iluminada que acabou de resolver. Os botões da
+barra superior viraram **ícones desenhados** (lâmpada, seta circular e pausa) e as rotações ganharam
+uma barrinha verde, amarela ou vermelha em relação à meta.
 
 ![Conquista na vitória](img/vitoria_conquista.png)
 
