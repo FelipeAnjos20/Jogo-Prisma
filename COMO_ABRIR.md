@@ -23,28 +23,35 @@ Não clique em "Source code", que é só o código. Não é preciso ter conta no
 
 ![Página de download no GitHub](docs/img/github_release.png)
 
-**2. Extraia o arquivo.** Na pasta **Downloads**, clique com o **botão direito** em
+**2. Se o navegador disser "Vírus detectado" ou o download sumir:** é um **alarme falso** do Windows
+Defender, comum em jogos feitos com Godot que não têm assinatura digital paga. O aviso costuma ter o nome
+`Trojan:Script/Wacatac.H!ml`; o final **`!ml`** quer dizer que é só uma suspeita automática, não um
+vírus encontrado. Para liberar:
+
+1. Abra **Segurança do Windows** (procure no menu Iniciar) → **Proteção contra vírus e ameaças** →
+   **Histórico de proteção**.
+2. Clique no item que cita `Prisma-windows-v…zip` e confira que o arquivo é o do PRISMA.
+3. Em **Ações**, escolha **Permitir no dispositivo** (o Windows pede confirmação de administrador).
+4. Volte à página de download e baixe de novo.
+
+Se preferir não mexer no antivírus, use a **[Opção B](#opção-b--abrir-o-projeto-no-godot)**, que roda o
+jogo pelo Godot sem baixar nenhum `.exe`.
+
+**3. Extraia o arquivo.** Na pasta **Downloads**, clique com o **botão direito** em
 `Prisma-windows-v…zip` → **Extrair Tudo...** → **Extrair**.
 
 > Não abra o jogo direto de dentro do zip, porque ele não funciona assim. Extraia primeiro.
 
-**3. Abra o jogo.** Na pasta extraída, dê **dois cliques em `Prisma.exe`**. Se o Windows estiver
+**4. Abra o jogo.** Na pasta extraída, dê **dois cliques em `Prisma.exe`**. Se o Windows estiver
 escondendo as extensões, o arquivo aparece como **Prisma**, do tipo "Aplicativo".
 
 > O arquivo `Prisma.pck` precisa ficar **na mesma pasta** do `Prisma.exe`, porque ele contém o jogo.
 
-**4. Se aparecer "O Windows protegeu o computador":** clique em **Mais informações** e depois em
+**5. Se aparecer "O Windows protegeu o computador":** clique em **Mais informações** e depois em
 **Executar assim mesmo**. O aviso aparece porque o jogo não tem uma assinatura digital paga, o que é
 comum em projetos acadêmicos e independentes.
 
-**5. Jogue!** No menu, clique em **Jogar**. Veja os [primeiros passos no jogo](#primeiros-passos-no-jogo).
-
-> **O navegador ou o antivírus disse "Vírus detectado" e o download falhou?** Isso é um alarme falso
-> comum em jogos feitos com Godot que não têm assinatura digital paga. Duas saídas:
-> 1. Use a **[Opção B](#opção-b--abrir-o-projeto-no-godot)**, que roda o jogo pelo Godot sem baixar nenhum `.exe`.
-> 2. Ou, no Windows, abra **Segurança do Windows → Proteção contra vírus e ameaças → Histórico de
->    proteção**, clique no item do Prisma, confira o nome (normalmente algo genérico, como `Wacatac` ou
->    terminado em `!ml`), escolha **Permitir no dispositivo** e baixe de novo.
+**6. Jogue!** No menu, clique em **Jogar**. Veja os [primeiros passos no jogo](#primeiros-passos-no-jogo).
 
 ---
 
@@ -139,6 +146,7 @@ e no menu **Como jogar** dentro do jogo.
 
 | Problema | Solução |
 | --- | --- |
+| O download falhou com "Vírus detectado" ou o zip sumiu da pasta Downloads | Alarme falso do Windows Defender: veja o [passo 2 da Opção A](#opção-a--só-jogar-windows) ou use a Opção B. |
 | O jogo não abre e reclama de um arquivo `.pck` | Extraia o zip inteiro e mantenha `Prisma.exe` e `Prisma.pck` juntos na mesma pasta. |
 | O Windows bloqueou o arquivo | Clique em **Mais informações → Executar assim mesmo**. Se não houver essa opção: botão direito em `Prisma.exe` → **Propriedades** → marque **Desbloquear** → **OK**. |
 | O Godot não encontra o projeto ou diz que a pasta é inválida | Entre na pasta **de dentro** (`Jogo-Prisma-main\Jogo-Prisma-main`) e selecione o `project.godot`. |
