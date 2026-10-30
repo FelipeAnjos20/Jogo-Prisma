@@ -36,3 +36,9 @@ static func melodia_da_fase(indice: int) -> Array:
 	for grau in [raiz, raiz + 2, raiz + 4]:
 		notas.append([ESCALA[mini(grau, ESCALA.size() - 1)], 0.5, 1.1])
 	return notas
+
+
+# Clicar na sala vazia toca uma nota: da esquerda (grave) para a direita (aguda).
+static func nota_da_posicao(x: float, inicio: float, largura: float) -> float:
+	var t := clampf((x - inicio) / maxf(largura, 1.0), 0.0, 1.0)
+	return ESCALA[mini(int(t * ESCALA.size()), ESCALA.size() - 1)]

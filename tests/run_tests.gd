@@ -61,6 +61,7 @@ func _init() -> void:
 	_test_conquistas_novas()
 	_test_recompensas_por_estrelas()
 	_test_atalhos_por_fase()
+	_test_nota_da_sala()
 
 	if _falhas == 0:
 		print("OK: %d/%d testes passaram" % [_total, _total])
@@ -392,3 +393,11 @@ func _test_atalhos_por_fase() -> void:
 	var fase4 := UIKit.atalhos_da_fase(3)
 	_assert_eq("fase 1 mostra so os atalhos basicos", fase1.contains("H: dica") and not fase1.contains("Z: desfazer"), true)
 	_assert_eq("fases seguintes mostram todos os atalhos", fase4.contains("Z: desfazer") and fase4.contains("T: falar com o Echo") and fase4.contains("M: música"), true)
+
+
+func _test_nota_da_sala() -> void:
+	var esquerda := Musica.nota_da_posicao(40.0, 40.0, 1200.0)
+	var direita := Musica.nota_da_posicao(1240.0, 40.0, 1200.0)
+	_assert_eq("clique a esquerda da sala toca a nota mais grave", esquerda, Musica.ESCALA[0])
+	_assert_eq("clique a direita da sala toca a nota mais aguda", direita, Musica.ESCALA.back())
+	_assert_eq("clique fora da sala continua dentro da escala", Musica.ESCALA.has(Musica.nota_da_posicao(-500.0, 40.0, 1200.0)), true)

@@ -11,6 +11,7 @@ const PrismScript := preload("res://scripts/prism.gd")
 const TutorialScript := preload("res://scripts/tutorial_pointer.gd")
 const AngleGuideScript := preload("res://scripts/angle_guide.gd")
 const LightPreviewScript := preload("res://scripts/light_preview.gd")
+const ClickRippleScript := preload("res://scripts/click_ripple.gd")
 const EchoBrain := preload("res://scripts/echo_brain.gd")
 const Geometria = preload("res://scripts/geometria.gd")
 const UI := preload("res://scripts/ui_kit.gd")
@@ -122,6 +123,7 @@ var _wake_said := false
 # Guia de angulos e caixa de informacao
 var _angle_guide: Node2D = null
 var _preview: Node2D = null
+var _ripples: Node2D = null
 var _hover_key := ""
 var _hover_time := 0.0
 var _victory_reflections: Array = []
@@ -159,6 +161,9 @@ func _ready() -> void:
 	_preview = LightPreviewScript.new()
 	$Puzzle.add_child(_preview)
 	$Puzzle.move_child(_preview, beam.get_index() + 1)
+	_ripples = ClickRippleScript.new()
+	$Puzzle.add_child(_ripples)
+	$Puzzle.move_child(_ripples, 0)
 	_load_level(clampi(GameState.current_level, 0, GameState.level_count() - 1))
 
 
@@ -579,6 +584,7 @@ func _begin_press(global_point: Vector2) -> void:
 		return
 	var mirror := _mirror_at(global_point)
 	if mirror == null:
+		_play_room(global_point)
 		return
 	if not mirror.can_rotate:
 		_locked_feedback(mirror)
@@ -594,6 +600,15 @@ func _begin_press(global_point: Vector2) -> void:
 	var offset := global_point - mirror.global_position
 	_drag_angle_ready = offset.length() >= DRAG_MIN_RADIUS
 	_drag_last_angle = offset.angle()
+
+
+# Clique na sala vazia: uma onda de luz e uma nota (grave a esquerda, aguda a direita).
+func _play_room(global_point: Vector2) -> void:
+	if not ROOM_RECT.has_point(global_point) or not _element_info_at(global_point).is_empty():
+		return
+	var t := (global_point.x - ROOM_RECT.position.x) / ROOM_RECT.size.x
+	_ripples.spawn(global_point, Color.from_hsv(t * 0.8, 0.45, 1.0))
+	Sfx.play_tone(Musica.nota_da_posicao(global_point.x, ROOM_RECT.position.x, ROOM_RECT.size.x))
 
 
 func _update_drag(global_point: Vector2) -> void:
