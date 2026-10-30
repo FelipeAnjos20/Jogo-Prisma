@@ -312,8 +312,8 @@ prisma. O jogo ganhou ícone e tela de abertura próprios (prisma com o espectro
   câmera lenta e zoom, para quem sente desconforto com esses efeitos. Também troca a íris por um *fade*
   suave e deixa o raio, a poeira e o menu sem animações fortes. Fica salva com as outras opções.
 - **Menos texto de uma vez:** a linha de atalhos mostra só o que o jogador já aprendeu (fase 1: clicar,
-  girar e dica; fase 2: trocar e desfazer; depois Echo, ângulos e música), e o balão do Echo procura um
-  canto que não cubra as peças nem o raio.
+  girar e dica; fase 2: trocar e desfazer; depois Echo, ângulos e música), e as falas do Echo aparecem na
+  barra superior, ao lado dele, sem cobrir a sala.
 
 ## 14. Arquitetura técnica
 

@@ -5,6 +5,16 @@ Todas as mudancas notaveis deste projeto serao documentadas neste arquivo.
 O formato e baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/),
 e este projeto segue o [Versionamento Semantico](https://semver.org/lang/pt-BR/).
 
+## [3.3.1] - 2026-10-30
+
+### Alterado
+
+- As falas do Echo saem do meio da sala e aparecem na barra superior, ao lado dele, no lugar do
+  titulo e do objetivo enquanto ele fala (como uma legenda). Nada mais cobre o puzzle.
+- O Echo fica a esquerda da barra, perto do texto; a barra ficou 4 px mais alta para caber 3 linhas.
+- As perguntas com botoes continuam na sala, mas so aparecem quando o jogador clica no Echo
+  (ou uma vez, na fase 2).
+
 ## [3.3.0] - 2026-10-30
 
 Jogo mais interativo e mais bonito, so no visual e na sensacao: as regras das fases, a

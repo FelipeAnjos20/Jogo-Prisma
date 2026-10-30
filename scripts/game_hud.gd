@@ -28,13 +28,13 @@ var _crystals_label: Label
 var _gems: GemRow
 var _music_button: Button
 
-var _toast_holder: Control
-var _toast: PanelContainer
-var _toast_label: Label
-var _toast_title: Label
-var _toast_tween: Tween
+# Fala do Echo na barra superior.
+var _speech: VBoxContainer
+var _speech_title: Label
+var _speech_text: Label
+var _speech_tween: Tween
+# Onde a pergunta do Echo (com botoes) aparece na sala.
 var _toast_anchor := Vector2(360, 96)
-var _toast_icon: EchoFace
 var _typing := false
 var _typed_chars := 0
 
@@ -93,8 +93,7 @@ var _help_label: Label
 var _help_pad_mode := false
 var _help_mouse := ""
 
-# Largura do balao de fala do Echo (o main.gd usa para escolher onde ele atrapalha menos).
-const TOAST_WIDTH := 560.0
+# Largura da pergunta do Echo (com botoes de resposta).
 const CHOICE_WIDTH := 640.0
 
 const HELP_PAD := "Controle:  ◀ ▶ girar   ·   LB / RB trocar espelho   ·   A girar   ·   B desfazer   ·   Y dica   ·   X reiniciar   ·   Start pausa"
@@ -104,7 +103,6 @@ func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
 	_build_top_bar()
 	_build_bottom_help()
-	_build_toast()
 	_flyer = EchoFace.new(17.0)
 	_flyer.visible = false
 	_flyer.size = _flyer.custom_minimum_size
@@ -154,56 +152,57 @@ func set_music_state(enabled: bool) -> void:
 	_music_button.text = "Música: ligada" if enabled else "Música: desligada"
 
 
-# O main.gd escolhe onde o aviso atrapalha menos (canto com menos pecas do puzzle).
+# O main.gd escolhe onde a pergunta do Echo atrapalha menos (canto com menos pecas do puzzle).
 func set_toast_anchor(anchor: Vector2) -> void:
 	_toast_anchor = anchor
 
 
+# A fala do Echo aparece na barra superior, ao lado dele, no lugar do titulo e do objetivo
+# (nada cobre a sala). Depois de "duration" segundos, o titulo e o objetivo voltam.
 # mood: "neutral", "happy", "thinking" ou "surprised" (muda a expressao do Echo).
 # O texto aparece letra por letra, com um som curto de "fala".
 func show_toast(title: String, text: String, duration := 6.0, mood := "neutral") -> void:
-	_toast_title.text = title
-	_toast_label.text = text
-	_toast_icon.mood = mood
-	_toast_icon.talking = true
+	_speech_title.text = title
+	_speech_text.text = text
 	set_buddy_mood(mood, clampf(text.length() * 0.022, 0.2, 2.2) + 1.5)
 	_buddy.talking = true
 	_typing = true
 	_typed_chars = 0
-	_toast_label.visible_characters = 0
+	_speech_text.visible_characters = 0
 	var typing_time := clampf(text.length() * 0.022, 0.2, 2.2)
-	if _toast_tween != null:
-		_toast_tween.kill()
-	_toast_holder.visible = true
-	_toast_holder.modulate.a = 0.0
-	_toast_holder.position = _toast_anchor - Vector2(0, 14)
-	_toast_tween = create_tween()
-	_toast_tween.set_parallel(true)
-	_toast_tween.tween_property(_toast_holder, "modulate:a", 1.0, 0.25)
-	_toast_tween.tween_property(_toast_holder, "position:y", _toast_anchor.y, 0.3).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
-	_toast_tween.tween_property(_toast_label, "visible_characters", text.length(), typing_time)
-	_toast_tween.chain().tween_callback(_finish_typing)
-	_toast_tween.chain().tween_interval(duration)
-	_toast_tween.chain().tween_property(_toast_holder, "modulate:a", 0.0, 0.5)
-	_toast_tween.chain().tween_callback(func() -> void: _toast_holder.visible = false)
+	if _speech_tween != null:
+		_speech_tween.kill()
+	_set_speaking(true)
+	_speech.modulate.a = 0.0
+	_speech_tween = create_tween()
+	_speech_tween.tween_property(_speech, "modulate:a", 1.0, 0.15)
+	_speech_tween.tween_property(_speech_text, "visible_characters", text.length(), typing_time)
+	_speech_tween.tween_callback(_finish_typing)
+	_speech_tween.tween_interval(duration)
+	_speech_tween.tween_property(_speech, "modulate:a", 0.0, 0.3)
+	_speech_tween.tween_callback(_set_speaking.bind(false))
 
 
 func hide_toast() -> void:
-	if _toast_tween != null:
-		_toast_tween.kill()
-	_toast_holder.visible = false
+	if _speech_tween != null:
+		_speech_tween.kill()
+	_set_speaking(false)
 	_finish_typing()
 
 
 func is_toast_visible() -> bool:
-	return _toast_holder.visible
+	return _speech.visible
+
+
+func _set_speaking(value: bool) -> void:
+	_speech.visible = value
+	_level_title.visible = not value
+	_objective.visible = not value
 
 
 func _finish_typing() -> void:
 	_typing = false
-	_toast_label.visible_characters = -1
-	if _toast_icon != null:
-		_toast_icon.talking = false
+	_speech_text.visible_characters = -1
 	if _buddy != null:
 		_buddy.talking = false
 
@@ -351,8 +350,8 @@ func choice_count() -> int:
 func _process(delta: float) -> void:
 	_update_buddy()
 	# Som curto de "fala" enquanto o texto do Echo e digitado.
-	if _typing and _toast_label.visible_characters - _typed_chars >= 3:
-		_typed_chars = _toast_label.visible_characters
+	if _typing and _speech_text.visible_characters - _typed_chars >= 3:
+		_typed_chars = _speech_text.visible_characters
 		Sfx.play("talk", randf_range(0.9, 1.15))
 
 	# A linha de ajuda mostra os comandos do controle quando ele esta sendo usado.
@@ -360,12 +359,6 @@ func _process(delta: float) -> void:
 	if _help_label != null and pad_mode != _help_pad_mode:
 		_help_pad_mode = pad_mode
 		_help_label.text = HELP_PAD if pad_mode else _help_mouse
-
-	# O aviso fica quase transparente quando o mouse passa por cima, para nao esconder o puzzle.
-	if _toast_holder == null or not _toast_holder.visible:
-		return
-	var over := Rect2(_toast_holder.position, _toast.size).grow(12.0).has_point(_toast_holder.get_global_mouse_position())
-	_toast.modulate.a = move_toward(_toast.modulate.a, 0.18 if over else 1.0, delta * 5.0)
 
 
 func flash(strength := 0.55) -> void:
@@ -480,12 +473,12 @@ func _build_top_bar() -> void:
 	style.border_width_bottom = 1
 	style.content_margin_left = 24
 	style.content_margin_right = 20
-	style.content_margin_top = 6
-	style.content_margin_bottom = 6
+	style.content_margin_top = 4
+	style.content_margin_bottom = 4
 	bar.add_theme_stylebox_override("panel", style)
 	bar.position = Vector2.ZERO
-	bar.size = Vector2(1280, 84)
-	bar.custom_minimum_size = Vector2(1280, 84)
+	bar.size = Vector2(1280, 88)
+	bar.custom_minimum_size = Vector2(1280, 88)
 	add_child(bar)
 
 	var row := HBoxContainer.new()
@@ -495,11 +488,39 @@ func _build_top_bar() -> void:
 	_logo = PrismLogo.new()
 	row.add_child(_logo)
 
+	# O Echo fica ao lado do texto: quando ele fala, a fala aparece ali, sem cobrir a sala.
+	_buddy = EchoFace.new(19.0)
+	_buddy.mouse_filter = Control.MOUSE_FILTER_STOP
+	_buddy.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
+	_buddy.tooltip_text = "Converse com o Echo (T)"
+	_buddy.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	_buddy.gui_input.connect(func(event: InputEvent) -> void:
+		if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
+			echo_clicked.emit()
+	)
+	row.add_child(_buddy)
+
 	var info := VBoxContainer.new()
 	info.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	info.alignment = BoxContainer.ALIGNMENT_CENTER
 	info.add_theme_constant_override("separation", 2)
 	row.add_child(info)
+
+	# Fala do Echo (fica no lugar do titulo e do objetivo enquanto ele fala).
+	_speech = VBoxContainer.new()
+	_speech.add_theme_constant_override("separation", 0)
+	_speech.visible = false
+	info.add_child(_speech)
+	_speech_title = UI.make_label("ECHO", 12, Color(0.55, 0.9, 1.0), 800)
+	_speech_text = UI.make_label("", 15, UI.TEXT, 500)
+	_speech_text.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	_speech_text.max_lines_visible = 3
+	_speech_text.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
+	_speech_text.custom_minimum_size.x = 200
+	# A altura considera o texto inteiro, entao a barra nao muda durante a digitacao.
+	_speech_text.visible_characters_behavior = TextServer.VC_CHARS_AFTER_SHAPING
+	_speech.add_child(_speech_title)
+	_speech.add_child(_speech_text)
 
 	_level_title = UI.make_label("Fase", 22, Color(1.0, 0.96, 0.84), 700)
 	_level_title.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
@@ -533,17 +554,6 @@ func _build_top_bar() -> void:
 	_crystals_label = UI.make_label("Cristais: 0 / 1", 14, UI.TEXT_DIM, 600)
 	crystal_row.add_child(_crystals_label)
 
-	_buddy = EchoFace.new(19.0)
-	_buddy.mouse_filter = Control.MOUSE_FILTER_STOP
-	_buddy.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
-	_buddy.tooltip_text = "Converse com o Echo (T)"
-	_buddy.size_flags_vertical = Control.SIZE_SHRINK_CENTER
-	_buddy.gui_input.connect(func(event: InputEvent) -> void:
-		if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
-			echo_clicked.emit()
-	)
-	row.add_child(_buddy)
-
 	var buttons := HBoxContainer.new()
 	buttons.alignment = BoxContainer.ALIGNMENT_CENTER
 	buttons.add_theme_constant_override("separation", 8)
@@ -565,48 +575,11 @@ func _build_top_bar() -> void:
 
 func _build_bottom_help() -> void:
 	_help_mouse = UI.atalhos_da_fase(0)
-	_help_label = UI.make_label(_help_mouse, 13,Color(0.55, 0.68, 0.85, 0.85), 500)
+	_help_label = UI.make_label(_help_mouse, 13, Color(0.55, 0.68, 0.85, 0.85), 500)
 	_help_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_help_label.position = Vector2(0, 697)
 	_help_label.size = Vector2(1280, 20)
 	add_child(_help_label)
-
-
-func _build_toast() -> void:
-	_toast_holder = Control.new()
-	_toast_holder.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_toast_holder.position = _toast_anchor
-	_toast_holder.visible = false
-	add_child(_toast_holder)
-
-	_toast = UI.make_panel(Color(0.04, 0.08, 0.15, 0.95), Color(0.55, 0.85, 1.0, 0.6), 14, 14)
-	_toast.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_toast.custom_minimum_size = Vector2(TOAST_WIDTH, 0)
-	_toast.size = Vector2(TOAST_WIDTH, 0)
-	_toast_holder.add_child(_toast)
-
-	var row := HBoxContainer.new()
-	row.add_theme_constant_override("separation", 14)
-	row.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_toast.add_child(row)
-
-	_toast_icon = EchoFace.new()
-	row.add_child(_toast_icon)
-
-	var column := VBoxContainer.new()
-	column.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	column.add_theme_constant_override("separation", 2)
-	column.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	row.add_child(column)
-
-	_toast_title = UI.make_label("ECHO", 14, Color(0.55, 0.9, 1.0), 800)
-	_toast_label = UI.make_label("", 17, UI.TEXT, 500)
-	_toast_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	_toast_label.custom_minimum_size.x = TOAST_WIDTH - 100.0
-	# O tamanho do balao considera o texto inteiro, entao ele nao muda durante a digitacao.
-	_toast_label.visible_characters_behavior = TextServer.VC_CHARS_AFTER_SHAPING
-	column.add_child(_toast_title)
-	column.add_child(_toast_label)
 
 
 func _build_choice() -> void:

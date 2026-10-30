@@ -219,7 +219,7 @@ As regras e as soluções das fases continuam as mesmas: a versão 3.3 mexe só 
   **acendem** conforme você conclui. A lanterna no topo brilha mais a cada fragmento recuperado.
 - **A sala toca música.** Clique num espaço vazio da sala: sai uma onda de luz e uma nota (grave à
   esquerda, aguda à direita).
-- **Menos texto na tela.** O balão do Echo procura um canto livre, os atalhos aparecem aos poucos e os
+- **Nada na frente do puzzle.** O Echo fala na barra de cima, ao lado dele (como uma legenda), os atalhos aparecem aos poucos e os
   cristais da barra superior viram gemas que acendem. Os botões crescem e brilham ao passar o mouse.
 - **Cada sala com a sua cor.** O raio **nasce** do emissor ao entrar na fase, e cada grupo de salas tem o
   seu tom: azul frio (1–3), violeta (4–5), âmbar (6–7), verde-azulado (8–9) e dourado (10). A poeira do
