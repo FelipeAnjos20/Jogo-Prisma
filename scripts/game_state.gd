@@ -31,6 +31,12 @@ var name_asked := false
 # "": ainda nao perguntou, "ajuda": da pistas quando o jogador trava, "sozinho": so comemora.
 var echo_help := ""
 
+# Conquistas ganhas (ids de scripts/conquistas.gd) e visual do Echo liberado por estrelas.
+var achievements: Array = []
+var curiosities_heard := 0
+var echo_color := "azul"
+var echo_accessory := "nenhum"
+
 # true quando o jogador esta usando teclado/controle nos menus (mostra o destaque de foco).
 var last_input_pad := false
 var _focus_ring: StyleBoxFlat
@@ -165,6 +171,10 @@ func completed_levels() -> int:
 func reset_progress() -> void:
 	_reset_progress_arrays()
 	unlocked_level = 0
+	achievements.clear()
+	curiosities_heard = 0
+	echo_color = "azul"
+	echo_accessory = "nenhum"
 	save_data()
 
 
@@ -241,6 +251,27 @@ func set_echo_help(mode: String) -> void:
 	save_data()
 
 
+# Retorna true so na primeira vez (para mostrar o aviso de conquista).
+func unlock_achievement(id: String) -> bool:
+	if achievements.has(id):
+		return false
+	achievements.append(id)
+	save_data()
+	return true
+
+
+func count_curiosity() -> int:
+	curiosities_heard += 1
+	save_data()
+	return curiosities_heard
+
+
+func set_echo_look(color_id: String, accessory_id: String) -> void:
+	echo_color = color_id
+	echo_accessory = accessory_id
+	save_data()
+
+
 func set_fullscreen(value: bool) -> void:
 	fullscreen = value
 	_apply_window_mode()
@@ -277,6 +308,10 @@ func save_data() -> void:
 	config.set_value("player", "name", player_name)
 	config.set_value("player", "name_asked", name_asked)
 	config.set_value("player", "echo_help", echo_help)
+	config.set_value("player", "achievements", achievements)
+	config.set_value("player", "curiosities_heard", curiosities_heard)
+	config.set_value("player", "echo_color", echo_color)
+	config.set_value("player", "echo_accessory", echo_accessory)
 	config.save(SAVE_PATH)
 
 
@@ -297,6 +332,11 @@ func load_data() -> void:
 	player_name = EchoBrain.limpar_nome(str(config.get_value("player", "name", player_name)))
 	name_asked = bool(config.get_value("player", "name_asked", name_asked))
 	echo_help = str(config.get_value("player", "echo_help", echo_help))
+	var saved_achievements = config.get_value("player", "achievements", [])
+	achievements = saved_achievements.duplicate() if saved_achievements is Array else []
+	curiosities_heard = int(config.get_value("player", "curiosities_heard", 0))
+	echo_color = str(config.get_value("player", "echo_color", echo_color))
+	echo_accessory = str(config.get_value("player", "echo_accessory", echo_accessory))
 
 
 func _copy_into(target: Array, source, fallback: int) -> void:

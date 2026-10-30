@@ -12,6 +12,7 @@ signal level_select_requested
 signal menu_requested
 signal music_toggled
 signal echo_clicked
+signal explanation_opened
 # tag identifica a pergunta; index e a opcao escolhida.
 signal choice_made(tag: String, index: int)
 
@@ -81,6 +82,13 @@ var _choice_tag := ""
 var _pause_root: Control
 var _resume_button: Button
 
+# Aviso de conquista (fila: uma de cada vez).
+var _award: PanelContainer
+var _award_title: Label
+var _award_text: Label
+var _award_queue: Array = []
+var _award_busy := false
+
 var _help_label: Label
 var _help_pad_mode := false
 var _help_mouse := ""
@@ -89,18 +97,7 @@ var _help_mouse := ""
 const TOAST_WIDTH := 560.0
 const CHOICE_WIDTH := 640.0
 
-# Atalhos do mouse/teclado, liberados aos poucos: [primeira fase em que aparece, texto].
-const HELP_STEPS := [
-	[0, "Clique: selecionar"],
-	[0, "Arrastar, Q/E ou roda: girar"],
-	[0, "H: dica"],
-	[1, "1-9 / Tab: trocar"],
-	[1, "Z: desfazer"],
-	[2, "T: falar com o Echo"],
-	[2, "G: ângulos"],
-	[3, "M: música"],
-]
-const HELP_PAD :="Controle:  ◀ ▶ girar   ·   LB / RB trocar espelho   ·   A girar   ·   B desfazer   ·   Y dica   ·   X reiniciar   ·   Start pausa"
+const HELP_PAD := "Controle:  ◀ ▶ girar   ·   LB / RB trocar espelho   ·   A girar   ·   B desfazer   ·   Y dica   ·   X reiniciar   ·   Start pausa"
 
 
 func _ready() -> void:
@@ -118,6 +115,7 @@ func _ready() -> void:
 	_build_flash()
 	_build_victory()
 	_build_pause()
+	_build_award()
 
 
 func _unhandled_input(event: InputEvent) -> void:
@@ -139,18 +137,9 @@ func setup_level(index: int, total: int, level: Dictionary) -> void:
 	_level_title.text = "Fase %d de %d  ·  %s" % [index + 1, total, level["name"]]
 	_objective.text = level["objective"]
 	_goal_label.text = "Meta ★★★: até %d rotações" % int(level["par"])
-	_help_mouse = help_for_level(index)
+	_help_mouse = UI.atalhos_da_fase(index)
 	_help_label.text = HELP_PAD if _help_pad_mode else _help_mouse
 	_show_banner("FASE %d" % (index + 1), level["name"])
-
-
-# Linha de atalhos da fase: so o que o jogador ja aprendeu, para nao encher a tela de texto.
-static func help_for_level(index: int) -> String:
-	var parts: Array = []
-	for step in HELP_STEPS:
-		if index >= int(step[0]):
-			parts.append(step[1])
-	return "   ·   ".join(parts)
 
 
 func update_stats(rotations: int, par: int, lit: int, total_crystals: int) -> void:
@@ -575,7 +564,7 @@ func _build_top_bar() -> void:
 
 
 func _build_bottom_help() -> void:
-	_help_mouse = help_for_level(0)
+	_help_mouse = UI.atalhos_da_fase(0)
 	_help_label = UI.make_label(_help_mouse, 13,Color(0.55, 0.68, 0.85, 0.85), 500)
 	_help_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_help_label.position = Vector2(0, 697)
@@ -670,6 +659,8 @@ func _build_tooltip() -> void:
 
 func _toggle_explanation() -> void:
 	_why_label.visible = not _why_label.visible
+	if _why_label.visible:
+		explanation_opened.emit()
 	_why_button.text = "Esconder explicação  ▴" if _why_label.visible else "Por que funcionou?  ▾"
 
 
@@ -855,7 +846,81 @@ func _build_pause() -> void:
 		column.add_child(button)
 
 
+func _build_award() -> void:
+	_award = UI.make_panel(Color(0.08, 0.07, 0.03, 0.96), Color(1.0, 0.86, 0.36, 0.8), 12, 12)
+	_award.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_award.custom_minimum_size = Vector2(320, 0)
+	_award.visible = false
+	add_child(_award)
+	var row := HBoxContainer.new()
+	row.add_theme_constant_override("separation", 12)
+	_award.add_child(row)
+	row.add_child(TrophyIcon.new())
+	var column := VBoxContainer.new()
+	column.add_theme_constant_override("separation", 0)
+	row.add_child(column)
+	column.add_child(UI.make_label("CONQUISTA DESBLOQUEADA", 12, UI.ACCENT, 800))
+	_award_title = UI.make_label("", 18, Color(1.0, 0.96, 0.84), 800)
+	_award_text = UI.make_label("", 13, UI.TEXT_DIM, 500)
+	_award_text.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	_award_text.custom_minimum_size.x = 230
+	column.add_child(_award_title)
+	column.add_child(_award_text)
+
+
+# Mostra o aviso de conquista; se ja houver um na tela, entra na fila.
+func show_achievement(title: String, text: String) -> void:
+	_award_queue.append([title, text])
+	if not _award_busy:
+		_next_award()
+
+
+func _next_award() -> void:
+	if _award_queue.is_empty():
+		_award_busy = false
+		_award.visible = false
+		return
+	_award_busy = true
+	var item: Array = _award_queue.pop_front()
+	_award_title.text = item[0]
+	_award_text.text = item[1]
+	_award.visible = true
+	_award.reset_size()
+	var shown_x := 1280.0 - _award.size.x - 16.0
+	_award.position = Vector2(1296.0, 96.0)
+	Sfx.play("crystal_on", 1.25)
+	var tween := create_tween()
+	tween.tween_property(_award, "position:x", shown_x, 0.4).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	tween.tween_interval(3.0)
+	tween.tween_property(_award, "position:x", 1296.0, 0.3).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_IN)
+	tween.tween_callback(_next_award)
+
+
 # ---------------------------------------------------------------- widgets desenhados
+
+# Trofeu do aviso de conquista.
+class TrophyIcon extends Control:
+	const Kit := preload("res://scripts/ui_kit.gd")
+	var _time := 0.0
+
+	func _init() -> void:
+		custom_minimum_size = Vector2(44, 44)
+		mouse_filter = Control.MOUSE_FILTER_IGNORE
+
+	func _process(delta: float) -> void:
+		_time += delta
+		queue_redraw()
+
+	func _draw() -> void:
+		var c := size * 0.5
+		var gold := Color(1.0, 0.82, 0.3)
+		draw_circle(c, 21.0, Color(1.0, 0.8, 0.3, 0.12 + 0.08 * sin(_time * 4.0)))
+		draw_colored_polygon(PackedVector2Array([c + Vector2(-11, -13), c + Vector2(11, -13), c + Vector2(7, 2), c + Vector2(-7, 2)]), gold)
+		draw_arc(c + Vector2(-11, -7), 5.0, PI * 0.5, PI * 1.5, 10, gold, 2.0, true)
+		draw_arc(c + Vector2(11, -7), 5.0, -PI * 0.5, PI * 0.5, 10, gold, 2.0, true)
+		draw_rect(Rect2(c + Vector2(-2, 2), Vector2(4, 7)), gold)
+		draw_rect(Rect2(c + Vector2(-8, 9), Vector2(16, 4)), gold.darkened(0.15))
+		Kit.draw_star(self, c + Vector2(0, -6), 4.5, false)
 
 class StarRow extends Control:
 	const Kit := preload("res://scripts/ui_kit.gd")

@@ -13,6 +13,8 @@ const PrismScript = preload("res://scripts/prism.gd")
 const Musica = preload("res://scripts/musica.gd")
 const Historia = preload("res://scripts/historia.gd")
 const EchoBrain = preload("res://scripts/echo_brain.gd")
+const Conquistas = preload("res://scripts/conquistas.gd")
+const UIKit = preload("res://scripts/ui_kit.gd")
 
 var _total := 0
 var _falhas := 0
@@ -53,6 +55,12 @@ func _init() -> void:
 	_test_nome_do_jogador()
 	_test_modo_deixa_comigo()
 	_test_falas_do_echo()
+
+	# Interatividade (v3.3): conquistas, visual do Echo e atalhos que aparecem aos poucos
+	_test_conquistas_da_vitoria()
+	_test_conquistas_novas()
+	_test_recompensas_por_estrelas()
+	_test_atalhos_por_fase()
 
 	if _falhas == 0:
 		print("OK: %d/%d testes passaram" % [_total, _total])
@@ -347,3 +355,40 @@ func _test_falas_do_echo() -> void:
 	_assert_eq("nenhuma fala do Echo fica com marcador sobrando", sem_marcador, true)
 	echo.player_name = "Bia"
 	_assert_eq("a curiosidade do Echo nunca vem vazia", echo.say("curiosity") != "", true)
+
+
+# ---------------------------------------------------------------- conquistas e recompensas (v3.3)
+
+func _test_conquistas_da_vitoria() -> void:
+	var primeira := Conquistas.da_vitoria({"fase": 0, "rotacoes": 3, "meta": 3, "dica": false, "segundos": 9.0, "fragmentos": 1, "total_fases": 10, "total_estrelas": 3})
+	_assert_eq("fase 1 sem dica, na meta e rapida da 4 conquistas", primeira, ["primeira_luz", "sem_dica", "na_medida", "relampago"])
+	var com_dica := Conquistas.da_vitoria({"fase": 4, "rotacoes": 9, "meta": 6, "dica": true, "segundos": 80.0, "fragmentos": 5, "total_fases": 10, "total_estrelas": 12})
+	_assert_eq("com dica e acima da meta so ganha meio prisma", com_dica, ["meio_prisma"])
+	var final := Conquistas.da_vitoria({"fase": 9, "rotacoes": 12, "meta": 10, "dica": true, "segundos": 60.0, "fragmentos": 10, "total_fases": 10, "total_estrelas": 30})
+	_assert_eq("ultimo fragmento e 30 estrelas dao as conquistas finais", final.has("prisma_restaurado") and final.has("ceu_estrelado"), true)
+
+
+func _test_conquistas_novas() -> void:
+	_assert_eq("conquista ja ganha nao aparece de novo", Conquistas.novas(["sem_dica", "na_medida"], ["sem_dica"]), ["na_medida"])
+	var ids := {}
+	var completas := true
+	for item in Conquistas.LISTA:
+		ids[item["id"]] = true
+		completas = completas and str(item["titulo"]) != "" and str(item["texto"]) != ""
+	_assert_eq("toda conquista tem id unico, titulo e texto", completas and ids.size() == Conquistas.total(), true)
+	_assert_eq("conquista desconhecida devolve vazio", Conquistas.dados("nao_existe"), {})
+
+
+func _test_recompensas_por_estrelas() -> void:
+	_assert_eq("cor azul e liberada desde o inicio", Conquistas.liberado(Conquistas.CORES, "azul", 0), true)
+	_assert_eq("arco-iris so com 30 estrelas", Conquistas.liberado(Conquistas.CORES, "arco_iris", 29), false)
+	_assert_eq("coroa liberada com estrelas suficientes", Conquistas.liberado(Conquistas.ACESSORIOS, "coroa", 26), true)
+	_assert_eq("com 0 estrelas a proxima recompensa e a mais barata", int(Conquistas.proxima_recompensa(0)[2]), 5)
+	_assert_eq("com 30 estrelas nao falta nenhuma recompensa", Conquistas.proxima_recompensa(30), [])
+
+
+func _test_atalhos_por_fase() -> void:
+	var fase1 := UIKit.atalhos_da_fase(0)
+	var fase4 := UIKit.atalhos_da_fase(3)
+	_assert_eq("fase 1 mostra so os atalhos basicos", fase1.contains("H: dica") and not fase1.contains("Z: desfazer"), true)
+	_assert_eq("fases seguintes mostram todos os atalhos", fase4.contains("Z: desfazer") and fase4.contains("T: falar com o Echo") and fase4.contains("M: música"), true)

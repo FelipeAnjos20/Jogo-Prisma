@@ -25,7 +25,28 @@ const COLOR_NAMES := {
 	"blue": "azul",
 }
 
+# Atalhos do mouse/teclado na fase, liberados aos poucos: [primeira fase em que aparece, texto].
+const ATALHOS := [
+	[0, "Clique: selecionar"],
+	[0, "Arrastar, Q/E ou roda: girar"],
+	[0, "H: dica"],
+	[1, "1-9 / Tab: trocar"],
+	[1, "Z: desfazer"],
+	[2, "T: falar com o Echo"],
+	[2, "G: ângulos"],
+	[3, "M: música"],
+]
+
 static var _fonts := {}
+
+
+# Linha de atalhos da fase: so o que o jogador ja aprendeu, para nao encher a tela de texto.
+static func atalhos_da_fase(index: int) -> String:
+	var parts: Array = []
+	for step in ATALHOS:
+		if index >= int(step[0]):
+			parts.append(step[1])
+	return "   ·   ".join(parts)
 
 
 static func light_color(color_name: String) -> Color:

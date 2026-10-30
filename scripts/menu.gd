@@ -7,6 +7,7 @@ const UI := preload("res://scripts/ui_kit.gd")
 const EchoFace := preload("res://scripts/echo_face.gd")
 const Historia := preload("res://scripts/historia.gd")
 const EchoBrain := preload("res://scripts/echo_brain.gd")
+const Conquistas := preload("res://scripts/conquistas.gd")
 
 # Edite aqui os nomes da equipe para aparecerem na tela de creditos.
 const TEAM := ["Vinicius Mesquita", "Felipe dos Anjos", "Eduardo Macedo", "Felipe Schwabe"]
@@ -23,6 +24,11 @@ var _credits_panel: Control
 var _name_panel: Control
 var _memories_panel: Control
 var _memories_list: VBoxContainer
+var _achievements_panel: Control
+var _achievements_list: VBoxContainer
+var _achievements_count: Label
+var _look_preview: EchoFace
+var _look_grid: VBoxContainer
 var _name_input: LineEdit
 var _options_name: LineEdit
 var _panels: Array = []
@@ -44,6 +50,7 @@ func _ready() -> void:
 	_build_credits_panel()
 	_build_name_panel()
 	_build_memories_panel()
+	_build_achievements_panel()
 	_build_footer()
 	_refresh_progress()
 	_show_panel(_main_panel)
@@ -90,10 +97,11 @@ func _new_column(width: float) -> VBoxContainer:
 
 func _build_main_panel() -> void:
 	var column := _new_column(340)
+	column.add_theme_constant_override("separation", 9)
 	_main_panel = column
 
 	_play_button = UI.make_button("Jogar", 24)
-	_play_button.custom_minimum_size.y = 58
+	_play_button.custom_minimum_size.y = 54
 	_play_button.pressed.connect(_on_play)
 	_play_button.add_to_group("default_focus")
 	column.add_child(_play_button)
@@ -101,15 +109,24 @@ func _build_main_panel() -> void:
 	var entries := [
 		["Seleção de fases", func() -> void: Transition.go_to("res://scenes/level_select.tscn")],
 		["Memórias do Prisma", func() -> void: _show_memories()],
+		["Conquistas e Echo", func() -> void: _show_achievements()],
 		["Como jogar", func() -> void: _show_panel(_howto_panel)],
 		["Opções", func() -> void: _show_panel(_options_panel)],
-		["Créditos", func() -> void: _show_panel(_credits_panel)],
-		["Sair", func() -> void: get_tree().quit()],
 	]
 	for entry in entries:
 		var button := UI.make_button(entry[0], 20)
 		button.pressed.connect(entry[1])
 		column.add_child(button)
+
+	# Creditos e Sair dividem a ultima linha.
+	var last_row := HBoxContainer.new()
+	last_row.add_theme_constant_override("separation", 12)
+	column.add_child(last_row)
+	for entry in [["Créditos", func() -> void: _show_panel(_credits_panel)], ["Sair", func() -> void: get_tree().quit()]]:
+		var button := UI.make_button(entry[0], 20)
+		button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		button.pressed.connect(entry[1])
+		last_row.add_child(button)
 
 
 func _build_options_panel() -> void:
@@ -324,6 +341,135 @@ func _show_memories() -> void:
 	_show_panel(_memories_panel)
 
 
+# Conquistas (lista) e visual do Echo (cores e acessorios liberados pelas estrelas).
+func _build_achievements_panel() -> void:
+	var column := _new_column(860)
+	_achievements_panel = column
+
+	var cards := HBoxContainer.new()
+	cards.add_theme_constant_override("separation", 14)
+	column.add_child(cards)
+
+	var list_card := UI.make_panel(UI.PANEL_BG, Color(1.0, 0.86, 0.36, 0.5))
+	list_card.custom_minimum_size.x = 440
+	cards.add_child(list_card)
+	var list_inner := VBoxContainer.new()
+	list_inner.add_theme_constant_override("separation", 8)
+	list_card.add_child(list_inner)
+	var header := HBoxContainer.new()
+	list_inner.add_child(header)
+	var title := UI.make_label("Conquistas", 28, Color(1.0, 0.96, 0.84), 800)
+	title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	header.add_child(title)
+	_achievements_count = UI.make_label("", 20, UI.ACCENT, 800)
+	header.add_child(_achievements_count)
+	var scroll := ScrollContainer.new()
+	scroll.custom_minimum_size = Vector2(404, 290)
+	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	list_inner.add_child(scroll)
+	_achievements_list = VBoxContainer.new()
+	_achievements_list.add_theme_constant_override("separation", 8)
+	_achievements_list.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	scroll.add_child(_achievements_list)
+
+	var look_card := UI.make_panel()
+	look_card.custom_minimum_size.x = 400
+	cards.add_child(look_card)
+	var look_inner := VBoxContainer.new()
+	look_inner.add_theme_constant_override("separation", 6)
+	look_card.add_child(look_inner)
+	var look_header := HBoxContainer.new()
+	look_inner.add_child(look_header)
+	var look_title := UI.make_label("Visual do Echo", 28, Color(1.0, 0.96, 0.84), 800)
+	look_title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	look_header.add_child(look_title)
+	_look_preview = EchoFace.new(24.0)
+	_look_preview.mood = "happy"
+	# Espaco extra em cima para o chapeu ou a coroa.
+	_look_preview.custom_minimum_size.y += 30.0
+	look_header.add_child(_look_preview)
+	_look_grid = VBoxContainer.new()
+	_look_grid.add_theme_constant_override("separation", 6)
+	look_inner.add_child(_look_grid)
+
+	var back := UI.make_button("Voltar", 20)
+	back.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
+	back.custom_minimum_size.x = 200
+	back.pressed.connect(func() -> void: _show_panel(_main_panel))
+	back.add_to_group("default_focus")
+	column.add_child(back)
+
+
+func _show_achievements() -> void:
+	for child in _achievements_list.get_children():
+		_achievements_list.remove_child(child)
+		child.queue_free()
+	var earned := 0
+	for item in Conquistas.LISTA:
+		var unlocked: bool = GameState.achievements.has(item["id"])
+		if unlocked:
+			earned += 1
+		var row := HBoxContainer.new()
+		row.add_theme_constant_override("separation", 10)
+		var medal := Medal.new()
+		medal.unlocked = unlocked
+		row.add_child(medal)
+		var texts := VBoxContainer.new()
+		texts.add_theme_constant_override("separation", 0)
+		texts.add_child(UI.make_label(item["titulo"], 16, Color(1.0, 0.92, 0.7) if unlocked else UI.TEXT_DIM, 800))
+		var description := UI.make_label(item["texto"], 13, UI.TEXT if unlocked else Color(0.5, 0.58, 0.7), 500)
+		description.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		description.custom_minimum_size.x = 370
+		texts.add_child(description)
+		row.add_child(texts)
+		_achievements_list.add_child(row)
+	_achievements_count.text = "%d / %d" % [earned, Conquistas.total()]
+	_refresh_looks()
+	_show_panel(_achievements_panel)
+
+
+# Botoes de cor e acessorio; os bloqueados mostram quantas estrelas faltam.
+func _refresh_looks() -> void:
+	for child in _look_grid.get_children():
+		_look_grid.remove_child(child)
+		child.queue_free()
+	var stars := GameState.total_stars()
+	_look_preview.preview_color = GameState.echo_color
+	_look_preview.preview_accessory = GameState.echo_accessory
+	for group in [["Cor", Conquistas.CORES, true], ["Acessório", Conquistas.ACESSORIOS, false]]:
+		_look_grid.add_child(UI.make_label(group[0], 15, UI.TEXT_DIM, 700))
+		var flow := HFlowContainer.new()
+		flow.add_theme_constant_override("h_separation", 6)
+		flow.add_theme_constant_override("v_separation", 6)
+		_look_grid.add_child(flow)
+		for option in group[1]:
+			var id: String = option[0]
+			var is_color: bool = group[2]
+			var unlocked := Conquistas.liberado(group[1], id, stars)
+			var chosen := id == (GameState.echo_color if is_color else GameState.echo_accessory)
+			var button := UI.make_button(option[1] if unlocked else "★ %d" % int(option[2]), 13)
+			button.disabled = not unlocked
+			if chosen:
+				button.add_theme_color_override("font_color", UI.ACCENT)
+				button.text = "✓ " + button.text
+			button.tooltip_text = "" if unlocked else "%s: libera com %d estrelas" % [option[1], int(option[2])]
+			button.pressed.connect(func() -> void:
+				if is_color:
+					GameState.set_echo_look(id, GameState.echo_accessory)
+				else:
+					GameState.set_echo_look(GameState.echo_color, id)
+				_refresh_looks()
+			)
+			flow.add_child(button)
+	var next := Conquistas.proxima_recompensa(stars)
+	var tip := "★ %d estrelas. " % stars
+	tip += "Próximo visual (%s) com %d estrelas." % [next[1], int(next[2])] if not next.is_empty() else "Você liberou todos os visuais!"
+	var tip_label := UI.make_label(tip, 13, UI.ACCENT, 600)
+	tip_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	tip_label.custom_minimum_size.x = 320
+	_look_grid.add_child(tip_label)
+
+
 func _slider_row(title: String, value: float, value_label: Label, on_change: Callable) -> HBoxContainer:
 	var row := HBoxContainer.new()
 	row.add_theme_constant_override("separation", 12)
@@ -527,3 +673,26 @@ func _play_intro() -> void:
 	tween.tween_property(art, "scale", Vector2.ONE, 1.2).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
 	tween.tween_property(_title, "modulate:a", 1.0, 0.6).set_delay(0.15)
 	tween.tween_property(_subtitle, "modulate:a", 1.0, 0.6).set_delay(0.4)
+
+
+# Medalha da lista de conquistas: dourada quando ganha, apagada com cadeado quando nao.
+class Medal extends Control:
+	const Kit := preload("res://scripts/ui_kit.gd")
+	var unlocked := false
+
+	func _init() -> void:
+		custom_minimum_size = Vector2(36, 36)
+		mouse_filter = Control.MOUSE_FILTER_IGNORE
+
+	func _draw() -> void:
+		var c := size * 0.5
+		if unlocked:
+			draw_circle(c, 17.0, Color(1.0, 0.8, 0.3, 0.18))
+			draw_circle(c, 13.0, Color(1.0, 0.8, 0.3))
+			draw_circle(c, 13.0, Color(1.0, 0.95, 0.7), false, 1.5, true)
+			Kit.draw_star(self, c, 7.0, false)
+		else:
+			draw_circle(c, 13.0, Color(0.1, 0.13, 0.2))
+			draw_circle(c, 13.0, Color(0.35, 0.42, 0.55), false, 1.5, true)
+			draw_arc(c + Vector2(0, -3), 4.0, PI, TAU, 10, Color(0.55, 0.62, 0.75), 2.0, true)
+			draw_rect(Rect2(c + Vector2(-5.5, -3), Vector2(11, 8)), Color(0.55, 0.62, 0.75))

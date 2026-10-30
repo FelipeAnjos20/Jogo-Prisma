@@ -15,6 +15,7 @@ const EchoBrain := preload("res://scripts/echo_brain.gd")
 const Geometria = preload("res://scripts/geometria.gd")
 const UI := preload("res://scripts/ui_kit.gd")
 const Musica := preload("res://scripts/musica.gd")
+const Conquistas := preload("res://scripts/conquistas.gd")
 
 const Feixe := preload("res://scripts/feixe.gd")
 
@@ -147,6 +148,7 @@ func _ready() -> void:
 	hud.music_toggled.connect(_toggle_music)
 	hud.echo_clicked.connect(_open_echo_menu)
 	hud.choice_made.connect(_on_choice)
+	hud.explanation_opened.connect(_grant.bind(["cientista"]))
 	hud.set_music_state(GameState.music_enabled)
 	_echo.player_name = GameState.player_name
 
@@ -773,8 +775,15 @@ func _complete_level() -> void:
 	completed = true
 	_drag_mirror = null
 	var token := _load_token
+	var stars_before := GameState.total_stars()
 	var result := GameState.record_result(level_index, rotation_count)
 	var is_last := level_index == GameState.level_count() - 1
+	var earned_ids := Conquistas.da_vitoria({
+		"fase": level_index, "estrelas": int(result["stars"]), "rotacoes": rotation_count,
+		"meta": int(level["par"]), "dica": _hint_used, "segundos": _level_time,
+		"fragmentos": GameState.completed_levels(), "total_fases": GameState.level_count(),
+		"total_estrelas": GameState.total_stars(),
+	})
 
 	var explanation_reflections: Array = beam.reflections.duplicate()
 	for mirror in mirrors:
@@ -813,6 +822,24 @@ func _complete_level() -> void:
 	# Na primeira vez que a fase e concluida, o fragmento devolve uma memoria da historia.
 	var story_index := level_index if bool(result.get("first_clear", false)) else -1
 	hud.show_victory(result, rotation_count, int(level["par"]), is_last, _level_time, comment, _build_explanation(), story_index)
+	_grant(earned_ids)
+	_announce_rewards(stars_before, GameState.total_stars())
+
+
+# Da as conquistas novas e mostra o aviso de cada uma.
+func _grant(ids: Array) -> void:
+	for id in Conquistas.novas(ids, GameState.achievements):
+		if GameState.unlock_achievement(id):
+			var info := Conquistas.dados(id)
+			hud.show_achievement(info["titulo"], info["texto"])
+
+
+# Estrelas novas podem liberar cores e acessorios do Echo.
+func _announce_rewards(before: int, after: int) -> void:
+	for option in Conquistas.CORES + Conquistas.ACESSORIOS:
+		var needed := int(option[2])
+		if needed > before and needed <= after:
+			hud.show_achievement("Novo visual do Echo: %s" % option[1], "Escolha em Conquistas, no menu principal.")
 
 
 # Timer em tempo real: nao fica mais lento com Engine.time_scale.
@@ -1034,6 +1061,7 @@ func _open_echo_menu() -> void:
 			hud.hide_choice()
 		return
 	Sfx.play("talk", 1.2)
+	_grant(["amigo_echo"])
 	var quiet := GameState.echo_help == "sozinho"
 	if not hud.is_toast_visible():
 		hud.set_toast_anchor(_best_toast_anchor())
@@ -1056,6 +1084,8 @@ func _on_choice(tag: String, index: int) -> void:
 					_show_hint()
 				1:
 					_say(_echo.say("curiosity"), 7.0, "happy", PRIORITY_HINT, "CURIOSIDADE")
+					if GameState.count_curiosity() >= Conquistas.CURIOSIDADES_PARA_CONQUISTA:
+						_grant(["curioso"])
 				2:
 					var quiet := GameState.echo_help == "sozinho"
 					GameState.set_echo_help("ajuda" if quiet else "sozinho")
