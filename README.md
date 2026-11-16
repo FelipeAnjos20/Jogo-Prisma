@@ -33,6 +33,7 @@ assistente **Echo**.
 10. [Estrutura do repositório](#10-estrutura-do-repositório)
 11. [Testes, CI e releases](#11-testes-ci-e-releases)
 12. [Créditos](#12-créditos)
+13. [Gerência de Configuração](#13-gerência-de-configuração)
 
 ---
 
@@ -383,8 +384,14 @@ Jogo-Prisma/
 ├── assets/audio/              # músicas do menu e das fases
 ├── tests/run_tests.gd         # testes automatizados (165 verificações, incluindo as 10 fases)
 ├── tools/level_simulator/     # simulador de fases em Node.js (ignorado pelo Godot)
-├── docs/                      # GDD, manual, vídeo, contexto, ADRs, créditos, imagens
-├── .github/workflows/         # CI (testes) e CD (build + release por tag)
+├── docs/                      # GDD, manual, vídeo, contexto, ADRs, créditos, imagens e PGCS
+│   └── PGCS_PRISMA_Felipe_dos_Anjos.docx / .pdf  # Plano de Gerência de Configuração
+├── .github/
+│   ├── workflows/             # CI (testes), CD (build + release por tag) e Web (GitHub Pages)
+│   ├── ISSUE_TEMPLATE/        # modelos de Issue: funcionalidade e defeito
+│   ├── pull_request_template.md
+│   └── CODEOWNERS             # revisores automáticos por pasta
+├── .gitignore / .gitattributes / .env.example / .editorconfig
 ├── COMO_ABRIR.md              # tutorial passo a passo para abrir e jogar
 └── CHANGELOG.md
 ```
@@ -419,3 +426,30 @@ O fluxo de trabalho é *trunk-based development* com Conventional Commits (ver
 ## 12. Créditos
 
 Veja [docs/creditos.md](docs/creditos.md).
+
+## 13. Gerência de Configuração
+
+O projeto segue o **Plano de Gerência de Configuração de Software (PGCS)**, versionado como item de
+configuração em [docs/PGCS_PRISMA_Felipe_dos_Anjos.pdf](docs/PGCS_PRISMA_Felipe_dos_Anjos.pdf)
+(fonte editável: [.docx](docs/PGCS_PRISMA_Felipe_dos_Anjos.docx)).
+
+**Dependências:** o PRISMA não usa gerenciador de pacotes, plugins nem addons, por isso não há
+lockfile. A única dependência é a **Godot 4.6.3**, fixada em `GODOT_VERSION` nos workflows e em
+`config/features` no `project.godot`. Trocar a versão da engine é mudança de alto risco (PGCS 8.2).
+
+**Segredos:** nenhum. O jogo não usa variáveis de ambiente (ver [.env.example](.env.example)); o
+pipeline usa apenas o `GITHUB_TOKEN` fornecido pelo GitHub Actions.
+
+### Como contribuir
+
+A branch `main` é protegida: ninguém (nem o administrador) envia commits direto nela.
+
+1. Abra uma **Issue** (modelos *Funcionalidade* ou *Defeito*).
+2. Crie a branch `feature/<issue>-<descricao>` ou `fix/<issue>-<descricao>`.
+3. Faça commits em **[Conventional Commits](https://www.conventionalcommits.org/pt-br/)**
+   (`feat:`, `fix:`, `docs:`, `chore:`, `test:`, `refactor:`).
+4. Abra um **Pull Request** usando o template; ele precisa de **1 aprovação do par de revisão**
+   (@henriqueandradee). Novos commits descartam a aprovação anterior.
+5. Merge somente por **squash** (o título do PR vira a mensagem do commit na `main`).
+6. A versão integrada vai para o environment **staging**; a publicação em **production** exige
+   aprovação do responsável (@FelipeAnjos20).

@@ -4,3 +4,10 @@
 
 # Builds exportados localmente
 /build/
+
+# Variáveis de ambiente locais (nunca versionar valores reais)
+.env
+*.env.local
+
+# Configuração local de ferramentas
+.claude/

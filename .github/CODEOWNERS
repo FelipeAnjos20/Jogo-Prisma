@@ -1,0 +1,16 @@
+# Revisores automáticos por área (PGC 2 e 5.2).
+#
+# No PRISMA, @henriqueandradee é o par de revisão: é chamado em todo PR.
+# Mudanças em pipelines, scripts do jogo, cenas, testes, configuração do
+# projeto Godot e documentação de GCS são de maior risco: o responsável
+# pelo projeto (@FelipeAnjos20) também é chamado.
+# Vale a ÚLTIMA linha que casar com o arquivo.
+
+*                    @henriqueandradee
+/.github/            @FelipeAnjos20 @henriqueandradee
+/scripts/            @FelipeAnjos20 @henriqueandradee
+/scenes/             @FelipeAnjos20 @henriqueandradee
+/tests/              @FelipeAnjos20 @henriqueandradee
+/docs/               @FelipeAnjos20 @henriqueandradee
+/project.godot       @FelipeAnjos20 @henriqueandradee
+/export_presets.cfg  @FelipeAnjos20 @henriqueandradee
